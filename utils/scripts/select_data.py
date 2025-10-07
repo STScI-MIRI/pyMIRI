@@ -11,8 +11,8 @@ import sys
 from glob import glob
 from datetime import datetime
 
-# import pyds9 as ds9
-from astropy.io import fits
+import pyds9 as ds9
+# from astropy.io import fits
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QFont
@@ -29,7 +29,7 @@ from PyQt5.QtWidgets import (
     # QLineEdit,
     QWidget,
     # QDialog,
-    QDialogButtonBox,
+    # QDialogButtonBox,
     QFileDialog
     )
 
@@ -62,7 +62,6 @@ class MainWindow(QMainWindow):
     
     def set_kwargs(self):
         if len(sys.argv) == 1:
-            # self.inpaths = 
             self.set_input_directory()
         else:
             self.inpaths = sys.argv[1:]
@@ -89,14 +88,14 @@ class MainWindow(QMainWindow):
     def initUI(self):
         
         sizeObject = QDesktopWidget().screenGeometry(-1)
-        self.setGeometry(int(sizeObject.width()/2)-320, 0, 640, 480)
+        self.setGeometry(int(sizeObject.width())-320, 0, 400, 400)
         
         widget = QWidget()
         self.setCentralWidget(widget)
         
         layout1 = QHBoxLayout()
         layout2 = QVBoxLayout()
-        layout3 = QVBoxLayout()
+        # layout3 = QVBoxLayout()
         
         info_layout = QGridLayout()
         info_layout.setAlignment(Qt.AlignTop)
@@ -110,9 +109,7 @@ class MainWindow(QMainWindow):
         
         indx_label = QLabel(self.index_str.format(self.viewed+self.cur_index+1,
                                                   self.num_files))
-        # indx_label = QLineEdit(self.index_str.format(self.cur_index+1,
-        #                                           self.num_files))
-        # indx_label.returnPressed.connect(self.on_text_changed)
+        
         self.indx_label = indx_label
         
         file_label = QLabel(self.file_str.format(self.cur_file))
@@ -181,25 +178,21 @@ class MainWindow(QMainWindow):
         layout2.addLayout(button_layout)
         layout1.addLayout(layout2)
         
-        imag_label = QLabel()
-        pixmap = QPixmap(self.df['Filename'][self.cur_index])
-        # pixmap = QPixmap()
-        scl_pm = pixmap.scaled(600, 600 , Qt.KeepAspectRatio)
-        imag_label.setPixmap(scl_pm)
-        self.imag_label = imag_label
+        # imag_label = QLabel()
+        self.ds9 = ds9.DS9()
+        if self.df['Filename'][self.cur_index].split('.')[1] == 'jpg':
+            self.ds9.set(f"jpeg {self.df['Filename'][self.cur_index]}")
+            # pixmap = QPixmap(self.df['Filename'][self.cur_index])
+            # scl_pm = pixmap.scaled(512, 516 , Qt.KeepAspectRatio)
+            # imag_label.setPixmap(scl_pm)
+            # self.imag_label = imag_label
+        elif self.df['Filename'][self.cur_index].split('.')[1] == 'fits':
+            self.ds9.set(f"file {self.df['Filename'][self.cur_index]}")
+            
+        self.ds9.set("zoom to fit")
         
-        # self.ds9 = ds9.DS9()
-        # self.ds9.set(f"file {self.df['Filename'][self.cur_index]}")
-        # self.ds9.set("zoom to fit")
-        
-        # top_layout = QHBoxLayout()
-        # top_layout.addWidget(indx_label)
-        
-        # layout3.addLayout(top_layout)
-        layout3.addWidget(imag_label)
-        
-        layout1.addLayout(layout3)
-
+        # layout3.addWidget(imag_label)
+        # layout1.addLayout(layout3)
         
         widget.setLayout(layout1)
         
@@ -246,7 +239,13 @@ class MainWindow(QMainWindow):
             pth = os.path.abspath(path)
             
             if os.path.isdir(pth):
-                flist = glob(os.path.join(pth, '*rate.jpg'))
+                flist = glob(os.path.join(pth, '*rate.fits'))
+                if len(flist) == 0:
+                    flist = glob(os.path.join(pth, '*rate.jpg'))
+                    if len(flist) == 0:
+                        print("Input directory deos not contain")
+                        print("fits or jpg rate files. Exiting...")
+                        sys.exit()
                 flist.sort()
                 filelist.extend(flist)
                 in_dict = {"Filename": filelist,
@@ -280,11 +279,15 @@ class MainWindow(QMainWindow):
         self.view_label.setText(self.cur_vstr)
         self.stat_label.setText(self.cur_sstr)
         
-        # self.ds9.set(f"file {self.df['Filename'][self.cur_index]}")
+        if self.df['Filename'][self.cur_index].split('.')[1] == 'jpg':
+            self.ds9.set(f"jpeg {self.df['Filename'][self.cur_index]}")
+            # pixmap = QPixmap(self.df['Filename'][self.cur_index])
+            # scl_pm = pixmap.scaled(512, 516, Qt.KeepAspectRatio)
+            # self.imag_label.setPixmap(scl_pm)
+        elif self.df['Filename'][self.cur_index].split('.')[1] == 'fits':
+            self.ds9.set(f"file {self.df['Filename'][self.cur_index]}")
         
-        pixmap = QPixmap(self.df['Filename'][self.cur_index])
-        scl_pm = pixmap.scaled(600, 600, Qt.KeepAspectRatio)
-        self.imag_label.setPixmap(scl_pm)
+        self.ds9.set("zoom to fit")
     
     
     def on_text_changed(self):
@@ -368,6 +371,7 @@ class MainWindow(QMainWindow):
         
     
     def closeEvent(self, event):
+        self.ds9.set("exit")
         self.save_clicked(usr_input=True)
         event.accept()  
         

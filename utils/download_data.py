@@ -110,6 +110,7 @@ def main():
     gmd.get_filtered_products(kw_query,
                               kind=download, 
                               outpath=args.outdir,
-                              rows=args.rows)
+                              rows=args.rows,
+                              psubgrp=args.pgroup)
     
     #gmd.test_args(args)
