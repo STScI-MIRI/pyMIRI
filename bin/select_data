@@ -19,7 +19,7 @@ if p_name=='Darwin':
 elif p_name=='Linux':
     miri_dir = '/home/sshenoy/pyADpack/pyMIRI'
 else:
-    sys.exit("Couldn't identify the os platform")
+    sys.exit("Couldn't identify the OS platform")
     
 sys.path.append(miri_dir)
 

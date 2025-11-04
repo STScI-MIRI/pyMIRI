@@ -11,11 +11,12 @@ import sys
 from glob import glob
 from datetime import datetime
 
+import numpy as np
 import pyds9 as ds9
-# from astropy.io import fits
+from astropy.io import fits
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QFont
+from PyQt5.QtGui import QFont#, QPixmap
 from PyQt5.QtWidgets import (
     QMainWindow,
     QApplication,
@@ -75,12 +76,18 @@ class MainWindow(QMainWindow):
         self.cur_file = self.df['Filename'][self.cur_index].split('/')[-1]
         self.file_str = "Filename: {}"
         
-        # self.cur_hdr = fits.getheader(self.cur_file)
+        self.fits_head = self.get_fits_headers(self.df['Filename'][self.cur_index])
+        
         self.cur_view = self.df['Viewed'][self.cur_index]
-        self.view_str = "Viewed: {}"
         
         self.cur_stat = self.df['Selected'][self.cur_index]
-        self.stat_str = "Selected: {}"
+        self.view_str = "Viewed: {} {} Selected: {}"
+        
+        self.cur_ngrp = self.df['NGroups'][self.cur_index]
+        self.ngrp_str = "NGroups: {} {} DOffset: {:.3f}, {:.3f}"
+        
+        self.cur_xoff = self.df['DithXoff'][self.cur_index]
+        self.cur_yoff = self.df['DithYoff'][self.cur_index]
         
         self.outpath = self.set_output()
         
@@ -115,17 +122,22 @@ class MainWindow(QMainWindow):
         file_label = QLabel(self.file_str.format(self.cur_file))
         self.file_label = file_label
         
-        view_label = QLabel(self.view_str.format(self.cur_view))
+        view_label = QLabel(self.view_str.format(self.cur_view, 
+                                                 44 * " ", 
+                                                 self.cur_stat))
         self.view_label = view_label
         
-        stat_label = QLabel(self.stat_str.format(self.cur_stat))
-        self.stat_label = stat_label
+        ngrp_label = QLabel(self.ngrp_str.format(self.cur_ngrp,
+                                                 44 * " ",
+                                                 self.cur_xoff, 
+                                                 self.cur_yoff))
+        self.ngrp_label = ngrp_label
         
         info_layout.addWidget(self.info_label)
         info_layout.addWidget(self.indx_label)
         info_layout.addWidget(self.file_label)
         info_layout.addWidget(self.view_label)
-        info_layout.addWidget(self.stat_label)
+        info_layout.addWidget(self.ngrp_label)
         
         frame = QFrame()
         frame.setFrameShape(QFrame.StyledPanel | QFrame.Raised)
@@ -162,7 +174,7 @@ class MainWindow(QMainWindow):
         maft_button.clicked.connect(self.maft_clicked)
         
         quit_button = QPushButton("Quit", self)
-        quit_button.clicked.connect(QApplication.instance().quit)
+        quit_button.clicked.connect(self.close_all)
         
         button_layout = QGridLayout()
         button_layout.setAlignment(Qt.AlignHCenter | Qt.AlignBottom)
@@ -187,6 +199,7 @@ class MainWindow(QMainWindow):
             # imag_label.setPixmap(scl_pm)
             # self.imag_label = imag_label
         elif self.df['Filename'][self.cur_index].split('.')[1] == 'fits':
+            # print(self.df['Filename'][self.cur_index])
             self.ds9.set(f"file {self.df['Filename'][self.cur_index]}")
             
         self.ds9.set("zoom to fit")
@@ -250,7 +263,15 @@ class MainWindow(QMainWindow):
                 filelist.extend(flist)
                 in_dict = {"Filename": filelist,
                            "Viewed": [False for fl in filelist],
-                           "Selected": [False for fl in filelist]}
+                           "Selected": [False for fl in filelist],
+                           "NGroups": ["" for fl in filelist],
+                           "ExpNums": ["" for fl in filelist],
+                           "DithPatt": ["" for fl in filelist],
+                           "DithTotl": ["" for fl in filelist],
+                           "DithNum": ["" for fl in filelist],
+                           "DithXoff": ["" for fl in filelist],
+                           "DithYoff": ["" for fl in filelist],
+                           }
                 
                 df = pd.DataFrame(in_dict)
                 self.viewed = 0
@@ -266,6 +287,71 @@ class MainWindow(QMainWindow):
         return df
     
     
+    def get_fits_headers(self, filename):
+        
+        fits_hdr = {'Filepath': [],
+                    'Filename': [],
+                    'NGroups': [],
+                    'ExpNums': [],
+                    'DithPatt': [],
+                    'DithTotl': [],
+                    'DithNum': [],
+                    'DithXoff': [],
+                    'DithYoff': [],
+                    }
+        
+        fullfile = self.df['Filename'][self.cur_index]
+        
+        if os.path.isfile(fullfile):
+            fname = fullfile
+        else:
+            fname = filename
+        
+        fits_hdr['Filepath'].append(fname)
+        
+        
+        if fname.split('.')[-1] != 'fits':
+            hdr_ngrp = "Non-FITS File"
+            hdr_dpth = "Non-FITS File"
+        else:
+            try:
+                hdr = fits.getheader(fname)
+            except FileNotFoundError:
+                hdr_ngrp = "FITS FnF"
+                hdr_dpth = "FITS FnF"
+            print(fname)
+            hdr_ngrp = hdr['NGROUPS']
+            hdr_nexp = hdr['EXPOSURE']
+            try:
+                hdr_dpth = hdr['PATTTYPE']
+            except KeyError:
+                hdr_dpth = 'KW Missing'
+            hdr_dtot = hdr['NUMDTHPT']
+            hdr_dnum = hdr['PATT_NUM']
+            hdr_xoff = hdr['XOFFSET']
+            hdr_yoff = hdr['YOFFSET']
+            
+        if fname.split('/')[-1] == self.cur_file:
+            fits_hdr['Filename'] = self.cur_file
+            fits_hdr['NGroups'].append(hdr_ngrp)
+            fits_hdr['ExpNums'].append(hdr_nexp)
+            fits_hdr['DithPatt'].append(hdr_ngrp)
+            fits_hdr['DithTotl'].append(hdr_dtot)
+            fits_hdr['DithNum'].append(hdr_dnum)
+            fits_hdr['DithXoff'].append(hdr_xoff)
+            fits_hdr['DithYoff'].append(hdr_yoff)
+        
+        self.df.loc[self.cur_index, 'NGroups'] = hdr_ngrp
+        self.df.loc[self.cur_index, 'ExpNums'] = hdr_ngrp
+        self.df.loc[self.cur_index, 'DithPatt'] = hdr_dpth
+        self.df.loc[self.cur_index, 'DithTotl'] = hdr_dtot
+        self.df.loc[self.cur_index, 'DithNum'] = hdr_dnum
+        self.df.loc[self.cur_index, 'DithXoff'] = hdr_xoff
+        self.df.loc[self.cur_index, 'DithYoff'] = hdr_yoff
+        
+        return fits_hdr
+    
+    
     def update_image(self):
         self.cur_istr = self.index_str.format(str(self.viewed+self.cur_index+1),
                                               self.num_files)
@@ -274,10 +360,18 @@ class MainWindow(QMainWindow):
         self.cur_vstr = self.view_str.format(self.df['Viewed'][self.cur_index])
         self.cur_sstr = self.stat_str.format(self.df['Selected'][self.cur_index])
         
+        self.fits_head = self.get_fits_headers(self.df['Filename'][self.cur_index])
+        
+        self.cur_nstr = self.ngrp_str.format(self.df['NGroups'][self.cur_index])
+        self.cur_doff = self.doff_str.format(self.df['DithXoff'][self.cur_index],
+                                             self.df['DithYoff'][self.cur_index])
+        
         self.indx_label.setText(self.cur_istr)
         self.file_label.setText(self.cur_fstr)
         self.view_label.setText(self.cur_vstr)
         self.stat_label.setText(self.cur_sstr)
+        self.ngrp_label.setText(self.cur_nstr)
+        self.doff_label.setText(self.cur_doff)
         
         if self.df['Filename'][self.cur_index].split('.')[1] == 'jpg':
             self.ds9.set(f"jpeg {self.df['Filename'][self.cur_index]}")
@@ -332,7 +426,7 @@ class MainWindow(QMainWindow):
         self.next_clicked()
         
         
-    def save_clicked(self, usr_input=False):
+    def save_clicked(self, usr_input=True):
         time_str = datetime.now().strftime("%Y-%m-%dT%H%M%S")
         
         tmp_fname = os.path.join(self.outpath, 
@@ -368,31 +462,19 @@ class MainWindow(QMainWindow):
             with open(outfile, 'w+') as f:
                 for line in mani_lst:
                     f.write(line+'\n')
-        
     
+    
+    def close_all(self):
+        self.ds9.set("exit")
+        self.save_clicked()
+        QApplication.quit()
+        
+        
     def closeEvent(self, event):
         self.ds9.set("exit")
-        self.save_clicked(usr_input=True)
+        self.save_clicked()
         event.accept()  
         
 
-# class CloseDialog(QDialog):
-#     def __init__(self, parent=None):
-#         super().__init__(parent)
-        
-#         self.setWindowTitle("Save File?")
-        
-#         QBtn = QDialogButtonBox().Yes | QDialogButtonBox().No
-        
-#         self.buttonBox = QDialogButtonBox(QBtn)
-#         self.buttonBox.accepted.connect(self.accept)
-#         self.buttonBox.rejected.connect(self.reject)
-        
-#         layout = QVBoxLayout()
-#         message = QLabel("Do you wnat to save the select data file?")
-#         layout.addWidget(message)
-#         layout.addWidget(self.buttonBox)
-#         self.setLayout(layout)
-        
-        
-        
+
+     
