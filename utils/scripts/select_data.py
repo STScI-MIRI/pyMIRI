@@ -11,7 +11,6 @@ import sys
 from glob import glob
 from datetime import datetime
 
-import numpy as np
 import pyds9 as ds9
 from astropy.io import fits
 
@@ -34,10 +33,6 @@ from PyQt5.QtWidgets import (
     QFileDialog
     )
 
-# import matplotlib
-# matplotlib.use("TkAgg")
-# import matplotlib.pyplot as plt
-# import matplotlib.image as mpimg
 import pandas as pd
 
 
@@ -147,10 +142,6 @@ class MainWindow(QMainWindow):
         
         layout2.addWidget(frame)
         
-        # load_button = QPushButton("Load")
-        # load_button.clicked.connect(self.load_clicked)
-        # self.load_button = load_button
-        
         next_button = QPushButton("Next")
         next_button.clicked.connect(self.next_clicked)
         self.next_button = next_button
@@ -178,7 +169,6 @@ class MainWindow(QMainWindow):
         
         button_layout = QGridLayout()
         button_layout.setAlignment(Qt.AlignHCenter | Qt.AlignBottom)
-        # button_layout.addWidget(load_button, 0, 0)
         button_layout.addWidget(uslt_button, 0, 1)
         button_layout.addWidget(prev_button, 1, 0)
         button_layout.addWidget(slct_button, 1, 1)
@@ -194,18 +184,10 @@ class MainWindow(QMainWindow):
         self.ds9 = ds9.DS9()
         if self.df['Filename'][self.cur_index].split('.')[1] == 'jpg':
             self.ds9.set(f"jpeg {self.df['Filename'][self.cur_index]}")
-            # pixmap = QPixmap(self.df['Filename'][self.cur_index])
-            # scl_pm = pixmap.scaled(512, 516 , Qt.KeepAspectRatio)
-            # imag_label.setPixmap(scl_pm)
-            # self.imag_label = imag_label
         elif self.df['Filename'][self.cur_index].split('.')[1] == 'fits':
-            # print(self.df['Filename'][self.cur_index])
             self.ds9.set(f"file {self.df['Filename'][self.cur_index]}")
             
         self.ds9.set("zoom to fit")
-        
-        # layout3.addWidget(imag_label)
-        # layout1.addLayout(layout3)
         
         widget.setLayout(layout1)
         
@@ -357,27 +339,26 @@ class MainWindow(QMainWindow):
                                               self.num_files)
         self.cur_file = self.df['Filename'][self.cur_index].split('/')[-1]
         self.cur_fstr = self.file_str.format(self.cur_file)
-        self.cur_vstr = self.view_str.format(self.df['Viewed'][self.cur_index])
-        self.cur_sstr = self.stat_str.format(self.df['Selected'][self.cur_index])
+        print("mark 2:", self.cur_index)
+        print(self.df['Viewed'][0:10])
+        self.cur_vstr = self.view_str.format(self.df['Viewed'][self.cur_index],
+                                             44 * " ",
+                                             self.df['Selected'][self.cur_index])
         
         self.fits_head = self.get_fits_headers(self.df['Filename'][self.cur_index])
         
-        self.cur_nstr = self.ngrp_str.format(self.df['NGroups'][self.cur_index])
-        self.cur_doff = self.doff_str.format(self.df['DithXoff'][self.cur_index],
+        self.cur_nstr = self.ngrp_str.format(self.df['NGroups'][self.cur_index],
+                                             44 * " ",
+                                             self.df['DithXoff'][self.cur_index],
                                              self.df['DithYoff'][self.cur_index])
         
         self.indx_label.setText(self.cur_istr)
         self.file_label.setText(self.cur_fstr)
         self.view_label.setText(self.cur_vstr)
-        self.stat_label.setText(self.cur_sstr)
         self.ngrp_label.setText(self.cur_nstr)
-        self.doff_label.setText(self.cur_doff)
         
         if self.df['Filename'][self.cur_index].split('.')[1] == 'jpg':
             self.ds9.set(f"jpeg {self.df['Filename'][self.cur_index]}")
-            # pixmap = QPixmap(self.df['Filename'][self.cur_index])
-            # scl_pm = pixmap.scaled(512, 516, Qt.KeepAspectRatio)
-            # self.imag_label.setPixmap(scl_pm)
         elif self.df['Filename'][self.cur_index].split('.')[1] == 'fits':
             self.ds9.set(f"file {self.df['Filename'][self.cur_index]}")
         
@@ -408,6 +389,7 @@ class MainWindow(QMainWindow):
         
     def prev_clicked(self):
         self.df.loc[self.cur_index, 'Viewed'] = True
+        print("mark 1:", self.cur_file)
         if self.cur_index > 0:
             self.cur_index = self.cur_index - 1
             self.update_image()
