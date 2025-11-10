@@ -301,7 +301,7 @@ class MainWindow(QMainWindow):
             except FileNotFoundError:
                 hdr_ngrp = "FITS FnF"
                 hdr_dpth = "FITS FnF"
-            print(fname)
+            
             hdr_ngrp = hdr['NGROUPS']
             hdr_nexp = hdr['EXPOSURE']
             try:
@@ -339,8 +339,6 @@ class MainWindow(QMainWindow):
                                               self.num_files)
         self.cur_file = self.df['Filename'][self.cur_index].split('/')[-1]
         self.cur_fstr = self.file_str.format(self.cur_file)
-        print("mark 2:", self.cur_index)
-        print(self.df['Viewed'][0:10])
         self.cur_vstr = self.view_str.format(self.df['Viewed'][self.cur_index],
                                              44 * " ",
                                              self.df['Selected'][self.cur_index])
@@ -389,7 +387,6 @@ class MainWindow(QMainWindow):
         
     def prev_clicked(self):
         self.df.loc[self.cur_index, 'Viewed'] = True
-        print("mark 1:", self.cur_file)
         if self.cur_index > 0:
             self.cur_index = self.cur_index - 1
             self.update_image()
