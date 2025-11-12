@@ -185,6 +185,7 @@ class MainWindow(QMainWindow):
         if self.df['Filename'][self.cur_index].split('.')[1] == 'jpg':
             self.ds9.set(f"jpeg {self.df['Filename'][self.cur_index]}")
         elif self.df['Filename'][self.cur_index].split('.')[1] == 'fits':
+            print("MARK 1: ", self.df['Filename'][self.cur_index])
             self.ds9.set(f"file {self.df['Filename'][self.cur_index]}")
             
         self.ds9.set("zoom to fit")
@@ -238,7 +239,7 @@ class MainWindow(QMainWindow):
                 if len(flist) == 0:
                     flist = glob(os.path.join(pth, '*rate.jpg'))
                     if len(flist) == 0:
-                        print("Input directory deos not contain")
+                        print("Input directory does not contain")
                         print("fits or jpg rate files. Exiting...")
                         sys.exit()
                 flist.sort()
@@ -259,6 +260,21 @@ class MainWindow(QMainWindow):
                 self.viewed = 0
             elif os.path.isfile(pth):
                 df_unsorted = pd.read_csv(pth)
+                if (not 'Filename' in df_unsorted.columns):
+                    df_unsorted = pd.read_csv(pth, header=None)
+                    if len(df_unsorted.columns) == 1:
+                        df_unsorted['Filename'] = df_unsorted[0].apply(os.path.abspath)
+                        df_unsorted.drop(0, axis=1)
+                    else:
+                        print("More than one column in the input file.")
+                        print("Please update csv file header and re-try the command.")
+                        sys.exit()
+                
+                req_cols = ['Viewed', 'Selected']
+                for col_name in req_cols:
+                    if not col_name in df_unsorted.columns:
+                        df_unsorted[col_name] = False
+                
                 df = df_unsorted.sort_values(by=["Viewed"]).reset_index(drop=True).copy()
                 self.viewed = len(df["Viewed"][df["Viewed"]==True]) - 1
             else:
