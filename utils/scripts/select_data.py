@@ -12,6 +12,7 @@ from glob import glob
 from datetime import datetime
 
 import pyds9 as ds9
+import numpy as np
 from astropy.io import fits
 
 from PyQt5.QtCore import Qt
@@ -63,6 +64,7 @@ class MainWindow(QMainWindow):
             self.inpaths = sys.argv[1:]
         
         self.df = self.get_data_frame(self.inpaths)
+        
         self.num_files = len(self.df)
         
         self.cur_index = 0
@@ -71,18 +73,33 @@ class MainWindow(QMainWindow):
         self.cur_file = self.df['Filename'][self.cur_index].split('/')[-1]
         self.file_str = "Filename: {}"
         
-        self.fits_head = self.get_fits_headers(self.df['Filename'][self.cur_index])
+        if 'rate' in self.cur_file:
+            self.kind = {'PROD_TYPE': 'rate'}
+        elif 'flt' in self.cur_file:
+            self.kind = {'PROD_TYPE': 'flt'}
+        else:
+            self.kind = {'PROD_TYPE': 'NA'}
+            
+        self.kind['FORMAT'] = self.cur_file.split('.')[-1]
         
+        if self.kind['PROD_TYPE']=='rate':
+            self.fits_head = self.get_fits_headers(self.df['Filename'][self.cur_index])
+            
+            self.cur_ngrp = self.df['NGroups'][self.cur_index]
+            self.cur_xoff = self.df['DithXoff'][self.cur_index]
+            self.cur_yoff = self.df['DithYoff'][self.cur_index]
+        else:
+            self.cur_ngrp = np.nan
+            self.cur_xoff = np.nan
+            self.cur_yoff = np.nan
+       
         self.cur_view = self.df['Viewed'][self.cur_index]
         
         self.cur_stat = self.df['Selected'][self.cur_index]
         self.view_str = "Viewed: {} {} Selected: {}"
         
-        self.cur_ngrp = self.df['NGroups'][self.cur_index]
-        self.ngrp_str = "NGroups: {} {} DOffset: {:.3f}, {:.3f}"
         
-        self.cur_xoff = self.df['DithXoff'][self.cur_index]
-        self.cur_yoff = self.df['DithYoff'][self.cur_index]
+        self.ngrp_str = "NGroups: {} {} DOffset: {:.3f}, {:.3f}"
         
         self.outpath = self.set_output()
         
@@ -185,7 +202,6 @@ class MainWindow(QMainWindow):
         if self.df['Filename'][self.cur_index].split('.')[1] == 'jpg':
             self.ds9.set(f"jpeg {self.df['Filename'][self.cur_index]}")
         elif self.df['Filename'][self.cur_index].split('.')[1] == 'fits':
-            print("MARK 1: ", self.df['Filename'][self.cur_index])
             self.ds9.set(f"file {self.df['Filename'][self.cur_index]}")
             
         self.ds9.set("zoom to fit")
@@ -236,25 +252,44 @@ class MainWindow(QMainWindow):
             
             if os.path.isdir(pth):
                 flist = glob(os.path.join(pth, '*rate.fits'))
+                
                 if len(flist) == 0:
                     flist = glob(os.path.join(pth, '*rate.jpg'))
                     if len(flist) == 0:
                         print("Input directory does not contain")
-                        print("fits or jpg rate files. Exiting...")
-                        sys.exit()
+                        print("fits or jpg rate files.")
+                        flist = glob(os.path.join(pth, '*flt.fits'))
+                        
+                        if len(flist) == 0:
+                            print("Input directory does not contain")
+                            print("fits FLT files. Existing.....")
+                            sys.exit()
+                        kind = {'FORMAT': 'fits', 'PROD_TYPE': 'flt'}
+                    kind = {'FORMAT': 'jpg', 'PROD_TYPE': 'rate'}
+                
+                    
+                kind = {'FORMAT': 'fits', 'PROD_TYPE': 'rate'}
+                
                 flist.sort()
                 filelist.extend(flist)
-                in_dict = {"Filename": filelist,
-                           "Viewed": [False for fl in filelist],
-                           "Selected": [False for fl in filelist],
-                           "NGroups": ["" for fl in filelist],
-                           "ExpNums": ["" for fl in filelist],
-                           "DithPatt": ["" for fl in filelist],
-                           "DithTotl": ["" for fl in filelist],
-                           "DithNum": ["" for fl in filelist],
-                           "DithXoff": ["" for fl in filelist],
-                           "DithYoff": ["" for fl in filelist],
-                           }
+                
+                if (kind['FORMAT']=='fits') & (kind['PROD_TYPE']=='rate'):
+                    in_dict = {"Filename": filelist,
+                               "Viewed": [False for fl in filelist],
+                               "Selected": [False for fl in filelist],
+                               "NGroups": ["" for fl in filelist],
+                               "ExpNums": ["" for fl in filelist],
+                               "DithPatt": ["" for fl in filelist],
+                               "DithTotl": ["" for fl in filelist],
+                               "DithNum": ["" for fl in filelist],
+                               "DithXoff": ["" for fl in filelist],
+                               "DithYoff": ["" for fl in filelist],
+                               }
+                else:
+                    in_dict = {"Filename": filelist,
+                               "Viewed": [False for fl in filelist],
+                               "Selected": [False for fl in filelist],
+                               }
                 
                 df = pd.DataFrame(in_dict)
                 self.viewed = 0
@@ -264,7 +299,7 @@ class MainWindow(QMainWindow):
                     df_unsorted = pd.read_csv(pth, header=None)
                     if len(df_unsorted.columns) == 1:
                         df_unsorted['Filename'] = df_unsorted[0].apply(os.path.abspath)
-                        df_unsorted.drop(0, axis=1)
+                        df_unsorted.drop(0, axis=1, inplace=True)
                     else:
                         print("More than one column in the input file.")
                         print("Please update csv file header and re-try the command.")
@@ -281,7 +316,7 @@ class MainWindow(QMainWindow):
                 print("\n Input directory or file not found.")
                 print(" Existing ......")
                 sys.exit()
-
+        
         return df
     
     
@@ -346,8 +381,6 @@ class MainWindow(QMainWindow):
         self.df.loc[self.cur_index, 'DithNum'] = hdr_dnum
         self.df.loc[self.cur_index, 'DithXoff'] = hdr_xoff
         self.df.loc[self.cur_index, 'DithYoff'] = hdr_yoff
-        
-        return fits_hdr
     
     
     def update_image(self):
@@ -359,12 +392,18 @@ class MainWindow(QMainWindow):
                                              44 * " ",
                                              self.df['Selected'][self.cur_index])
         
-        self.fits_head = self.get_fits_headers(self.df['Filename'][self.cur_index])
-        
-        self.cur_nstr = self.ngrp_str.format(self.df['NGroups'][self.cur_index],
-                                             44 * " ",
-                                             self.df['DithXoff'][self.cur_index],
-                                             self.df['DithYoff'][self.cur_index])
+        if self.kind['PROD_TYPE']=='rate':
+            self.fits_head = self.get_fits_headers(self.df['Filename'][self.cur_index])
+            
+            self.cur_nstr = self.ngrp_str.format(self.df['NGroups'][self.cur_index],
+                                                 44 * " ",
+                                                 self.df['DithXoff'][self.cur_index],
+                                                 self.df['DithYoff'][self.cur_index])
+        else:
+            self.cur_nstr = self.ngrp_str.format(np.nan,
+                                                 44 * " ",
+                                                 np.nan,
+                                                 np.nan)
         
         self.indx_label.setText(self.cur_istr)
         self.file_label.setText(self.cur_fstr)
@@ -377,7 +416,7 @@ class MainWindow(QMainWindow):
             self.ds9.set(f"file {self.df['Filename'][self.cur_index]}")
         
         self.ds9.set("zoom to fit")
-    
+        
     
     def on_text_changed(self):
         new_inx_str = self.indx_label.text()
@@ -443,7 +482,13 @@ class MainWindow(QMainWindow):
         
     def maft_clicked(self):
         mani_df = self.df.copy()
-        fname_col = mani_df['Filename'].str.replace('jpg', 'fits').str.replace('rate', 'uncal')
+        print(self.kind)
+        if self.kind['FORMAT'] == 'jpg':
+            fname_col = mani_df['Filename'].str.replace('jpg', 'fits').str.replace('rate', 'uncal')
+        elif self.kind['PROD_TYPE'] == 'rate':
+            fname_col = mani_df['Filename'].str.replace('rate', 'uncal')
+        elif self.kind['PROD_TYPE'] == 'flt':
+            fname_col = mani_df['Filename'].str.replace('flt', 'raw')
         mani_lst =list(fname_col[mani_df['Selected']==True])
         
         fname = os.path.join(self.outpath, 'manifest.lst')
