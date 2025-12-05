@@ -82,7 +82,7 @@ class MainWindow(QMainWindow):
             
         self.kind['FORMAT'] = self.cur_file.split('.')[-1]
         
-        if self.kind['PROD_TYPE']=='rate':
+        if (self.kind['PROD_TYPE']=='rate') and (self.kind['FORMAT']=='fits'):
             self.fits_head = self.get_fits_headers(self.df['Filename'][self.cur_index])
             
             self.cur_ngrp = self.df['NGroups'][self.cur_index]
@@ -392,7 +392,7 @@ class MainWindow(QMainWindow):
                                              44 * " ",
                                              self.df['Selected'][self.cur_index])
         
-        if self.kind['PROD_TYPE']=='rate':
+        if (self.kind['PROD_TYPE']=='rate') and (self.kind['FORMAT']=='fits'):
             self.fits_head = self.get_fits_headers(self.df['Filename'][self.cur_index])
             
             self.cur_nstr = self.ngrp_str.format(self.df['NGroups'][self.cur_index],
@@ -482,13 +482,14 @@ class MainWindow(QMainWindow):
         
     def maft_clicked(self):
         mani_df = self.df.copy()
-        print(self.kind)
+        
         if self.kind['FORMAT'] == 'jpg':
-            fname_col = mani_df['Filename'].str.replace('jpg', 'fits').str.replace('rate', 'uncal')
-        elif self.kind['PROD_TYPE'] == 'rate':
+            fname_col = mani_df['Filename'].str.replace('jpg', 'fits')#.str.replace('rate', 'uncal')
+        if self.kind['PROD_TYPE'] == 'rate':
             fname_col = mani_df['Filename'].str.replace('rate', 'uncal')
-        elif self.kind['PROD_TYPE'] == 'flt':
+        if self.kind['PROD_TYPE'] == 'flt':
             fname_col = mani_df['Filename'].str.replace('flt', 'raw')
+        
         mani_lst =list(fname_col[mani_df['Selected']==True])
         
         fname = os.path.join(self.outpath, 'manifest.lst')
@@ -505,13 +506,19 @@ class MainWindow(QMainWindow):
     
     
     def close_all(self):
-        self.ds9.set("exit")
+        try:
+            self.ds9.set("exit")
+        except ValueError:
+            print("DS9 is not running. Exiting....")
         self.save_clicked()
         QApplication.quit()
         
         
     def closeEvent(self, event):
-        self.ds9.set("exit")
+        try:
+            self.ds9.set("exit")
+        except ValueError:
+            print("DS9 is not running. Exiting....")
         self.save_clicked()
         event.accept()  
         
