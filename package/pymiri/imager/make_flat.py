@@ -14,7 +14,6 @@ MakeFalt class to generate MIRI imager flats.
 import os
 import sys
 import argparse
-import numpy as np
 
 from . import MakeFlat
 
