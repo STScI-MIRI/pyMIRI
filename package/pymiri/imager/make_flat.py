@@ -15,7 +15,7 @@ import os
 import sys
 import argparse
 
-from . import MakeFlat
+from package.pymiri.imager import MakeFlat
 
 def main():
     """Main function to call the argparse"""

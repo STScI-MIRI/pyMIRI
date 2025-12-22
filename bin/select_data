@@ -23,7 +23,7 @@ else:
     
 sys.path.append(miri_dir)
 
-from gui import select_data
+from package.pymiri.gui import select_data
 
 if __name__ == "__main__":
     

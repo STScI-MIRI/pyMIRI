@@ -14,7 +14,7 @@ import sys
 import json
 from datetime import datetime
 
-import numpy as np
+# import numpy as np
 import pandas as pd
 from astroquery.mast import Mast, Observations
 

@@ -21,7 +21,7 @@ else:
     
 sys.path.append(miri_dir)
 
-from utils import download_data as dd
+from package.pymiri.utils import download_data as dd
 
 if __name__ == "__main__":
     dd.main()

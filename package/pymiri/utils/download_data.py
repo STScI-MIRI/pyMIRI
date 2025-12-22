@@ -13,7 +13,7 @@ import os
 # import sys
 import argparse
 
-from . import DownloadData
+from package.pymiri.utils import DownloadData
 
 def main():
     """Main function to call the argparse"""

@@ -22,7 +22,7 @@ else:
     
 sys.path.append(miri_dir)
 
-from imager import make_flat as mf
+from package.pymiri.imager import make_flat as mf
 
 if __name__ == "__main__":
     mf.main()
