@@ -15,7 +15,9 @@ import os
 import sys
 import argparse
 
-from package.pymiri.imager import MakeFlat
+import pyds9 as ds9
+
+from pymiri.imager import MakeFlat
 
 def main():
     """Main function to call the argparse"""
@@ -120,6 +122,11 @@ def main():
                              mask=flt_mask, 
                              dthres=args.thres,
                              save=args.save)
+
+    if not args.save:
+        d = ds9.DS9()
+        d.set_np2arr(fdata.data)
+    
     
     sys.exit()
     

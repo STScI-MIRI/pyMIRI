@@ -409,6 +409,59 @@ class MakeFlat(object):
         nan_str = " Total # of pix masked: {} ({:.2f}%)\n"
         print(nan_str.format(nan_total, 100*nan_total/(1032*1024)))
         
+        ### Display mask and its histogram.
+        odata = np.ma.array(sci_arr, mask=(dq_arr != 0), 
+                            fill_value=np.nan)
+        od_min = np.nanmin(odata)
+        od_max = np.nanmax(odata)
+        od_mean, od_median, od_std = sigma_clipped_stats(odata)
+        od_cnts, od_begs = np.histogram(odata.data,
+                                       bins='fd',
+                                       range=(od_min, od_max) )
+        od_bmid = (od_begs[:-1] + od_begs[1:])/2
+        
+        
+        hdata = np.ma.array(hdul['sci'].data, mask=flat_mask, 
+                            fill_value=np.nan)
+        hd_min = np.nanmin(hdata)
+        hd_max = np.nanmax(hdata)
+        hd_mean, hd_median, hd_std = sigma_clipped_stats(hdata)
+        hd_cnts, hd_begs = np.histogram(hdata.data,
+                                        bins='fd',
+                                        range=(hd_min, hd_max) )
+        hd_bmid = (hd_begs[:-1] + hd_begs[1:])/2
+        
+        print(" Masked Array Stats")
+        print("\t Min    : {:.3f}".format(hd_min).expandtabs(4))
+        print("\t Max    : {:.3f}".format(hd_max).expandtabs(4))
+        print("\t Mean   : {:.3f}".format(hd_mean).expandtabs(4))
+        print("\t Median : {:.3f}".format(hd_median).expandtabs(4)),
+        print("\t StDev  : {:.3f}\n".format(hd_std).expandtabs(4))
+        
+        fig, axs = plt.subplots(1, 2, figsize=(12,6))
+        
+        axs[0].imshow(hdata, origin='lower')
+        pcm = axs[0].pcolormesh(hdata)
+        axs[0].set_title('Masked SCI Array')
+        axs[0].annotate("Stats", xy=(10, 210))
+        axs[0].annotate("Min       : {:.3f}".format(hd_min), xy=(10, 160))
+        axs[0].annotate("Max      : {:.3f}".format(hd_max), xy=(10, 110))
+        axs[0].annotate("Median : {:.3f}".format(hd_median), xy=(10, 60))
+        axs[0].annotate("StdDev : {:.3f}".format(hd_std), xy=(10, 10))
+        
+        axs[1].plot(od_bmid, od_cnts, label='Original')
+        axs[1].plot(hd_bmid, hd_cnts, label='Masked')
+        axs[1].axvline(hd_median)
+        axs[1].axvline(hd_min)
+        axs[1].axvline(hd_max)
+        axs[1].set_yscale('log')
+        
+        axs[1].legend()
+        
+        plt.suptitle(f_name)
+        plt.colorbar(pcm, ax=axs[0], shrink=0.7)
+        plt.tight_layout()
+        
         if save is True:
             
             if not os.path.isdir(self.outpath + 'plot/'):
@@ -417,58 +470,9 @@ class MakeFlat(object):
             out_name = self.outpath + 'plot/' + f_name.replace('.fits',
                                                               '.png')
             
-            odata = np.ma.array(sci_arr, mask=(dq_arr != 0), 
-                                fill_value=np.nan)
-            od_min = np.nanmin(odata)
-            od_max = np.nanmax(odata)
-            od_mean, od_median, od_std = sigma_clipped_stats(odata)
-            od_cnts, od_begs = np.histogram(odata.data,
-                                           bins='fd',
-                                           range=(od_min, od_max) )
-            od_bmid = (od_begs[:-1] + od_begs[1:])/2
-            
-            
-            hdata = np.ma.array(hdul['sci'].data, mask=flat_mask, 
-                                fill_value=np.nan)
-            hd_min = np.nanmin(hdata)
-            hd_max = np.nanmax(hdata)
-            hd_mean, hd_median, hd_std = sigma_clipped_stats(hdata)
-            hd_cnts, hd_begs = np.histogram(hdata.data,
-                                            bins='fd',
-                                            range=(hd_min, hd_max) )
-            hd_bmid = (hd_begs[:-1] + hd_begs[1:])/2
-            
-            print(" Masked Array Stats")
-            print("\t Min    : {:.3f}".format(hd_min).expandtabs(4))
-            print("\t Max    : {:.3f}".format(hd_max).expandtabs(4))
-            print("\t Mean   : {:.3f}".format(hd_mean).expandtabs(4))
-            print("\t Median : {:.3f}".format(hd_median).expandtabs(4)),
-            print("\t StDev  : {:.3f}\n".format(hd_std).expandtabs(4))
-            
-            fig, axs = plt.subplots(1, 2, figsize=(12,6))
-            
-            axs[0].imshow(hdata, origin='lower')
-            pcm = axs[0].pcolormesh(hdata)
-            axs[0].set_title('Masked SCI Array')
-            axs[0].annotate("Stats", xy=(10, 210))
-            axs[0].annotate("Min       : {:.3f}".format(hd_min), xy=(10, 160))
-            axs[0].annotate("Max      : {:.3f}".format(hd_max), xy=(10, 110))
-            axs[0].annotate("Median : {:.3f}".format(hd_median), xy=(10, 60))
-            axs[0].annotate("StdDev : {:.3f}".format(hd_std), xy=(10, 10))
-            
-            axs[1].plot(od_bmid, od_cnts, label='Original')
-            axs[1].plot(hd_bmid, hd_cnts, label='Masked')
-            axs[1].axvline(hd_median)
-            axs[1].axvline(hd_min)
-            axs[1].axvline(hd_max)
-            axs[1].set_yscale('log')
-            
-            axs[1].legend()
-            
-            plt.suptitle(f_name)
-            plt.colorbar(pcm, ax=axs[0], shrink=0.7)
-            plt.tight_layout()
             plt.savefig(out_name)
+        else:
+            plt.show()
         
         hdul.close()
         

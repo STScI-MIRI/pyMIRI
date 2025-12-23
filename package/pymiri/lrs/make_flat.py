@@ -15,7 +15,7 @@ import os
 import sys
 import argparse
 
-from package.pymiri.lrs import MakeFlat
+from ppymiri.lrs import MakeFlat
 
 def main():
     """Main function to call the argparse"""

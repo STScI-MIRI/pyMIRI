@@ -10,6 +10,7 @@ package/pyMIRI.egg-info/entry_points.txt
 package/pyMIRI.egg-info/requires.txt
 package/pyMIRI.egg-info/top_level.txt
 package/pymiri/__init__.py
+package/pymiri/gui/SelectData.py
 package/pymiri/gui/__init__.py
 package/pymiri/gui/select_data.py
 package/pymiri/imager/MakeFlat.py
