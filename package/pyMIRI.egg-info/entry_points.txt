@@ -1,5 +1,5 @@
 [console_scripts]
 generate_imager_flat = pymiri.imager.make_flat:main
-generate_lrs_flat = pymiri.lrs.make_falt:main
+generate_lrs_flat = pymiri.lrs.make_flat:main
 get_data = pymiri.utils.download_data:main
 select_data = pymiri.gui.select_data:main

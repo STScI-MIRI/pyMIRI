@@ -15,7 +15,9 @@ import os
 import sys
 import argparse
 
-from ppymiri.lrs import MakeFlat
+from pymiri.lrs import MakeFlat
+from pymiri.utils.check_directory import check_directory
+from pymiri.utils.get_output_directory import get_output_directory
 
 def main():
     """Main function to call the argparse"""
@@ -55,27 +57,28 @@ def main():
     
     args = parser.parse_args()
 
-   
+    print("--- Parsed Arguments ---")
+    args_dict = vars(args)
+    for key, value in args_dict.items():
+        print(f"{key:<15}: {value}")
+    print("------------------------")
+
     in_file = args.manifest[0]
     
     mf = MakeFlat.MakeFlat()
 
- #   params = mf.read_config_file(cfg_file)
+    input_directory = check_directory(args.inpath) 
+    file_list = mf.read_manifest(in_file, inpath=input_directory)
     
-    if args.inpath[-1] != '/':
-        args.inpath = args.inpath + '/'
-    
-    file_list = mf.read_manifest(in_file, inpath=args.inpath)
-    
-    if args.outdir is None:
-        o_dir = args.inpath + 'proc/' 
-    elif args.outdir[-1] != '/':
-        o_dir = args.outdir + '/' 
-    else:
-        o_dir = args.outdir
+    output_directory = get_output_directory(name=args.outdir)
     
     for f in file_list:
-        fit_data = mf.fit_lrs_array(f, save=args.save)
+        fit_data = mf.fit_lrs_array(f, 
+                                    model_type=args.model_type,
+                                    model = args.model_name,
+                                    outpath=output_directory, 
+                                    save=args.save)
+        print("\n", f, "\n")
         # bkg_dm = mf.subtract_model_profile(f, 
         #                                    model_param=fit_data, 
         #                                    subtract='moffat', 
@@ -85,7 +88,10 @@ def main():
         #                                    subtract='linear', 
         #                                    save=args.save)
     
-    print(len(file_list), o_dir, fit_data)#, bkg_dm, psf_dm)
+    print(len(file_list), 
+          input_directory, 
+          output_directory,
+          fit_data.meta.filename)
     
     sys.exit()
     

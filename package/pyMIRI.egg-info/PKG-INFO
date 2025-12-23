@@ -5,7 +5,7 @@ Summary: Collection of functions and class to facilitate MIRI data reduction and
 Home-page: https://github.com/STScI-MIRI/pyMIRI
 Author: Sachindev Shenoy
 Author-email: "Sachindev Shenoy" <sachin.4m.stsci@gmail.com>
-License: MIT
+License: BSD
 License-File: LICENSE
 Requires-Dist: astropy>=6.1
 Requires-Dist: astroquery
