@@ -1,0 +1,8 @@
+astropy>=6.1
+astroquery
+jwst
+matplotlib
+numpy>=2.2
+pandas>=2.2
+pyds9>=1.8
+PyQt5
