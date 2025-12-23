@@ -1,12 +1,15 @@
-pyMIRI - Codes to build MIRI imager flat
+pyMIRI - Collection of functions and class to facilitate MIRI data reduction, 
+calibration, and analysis.
 ================================================================================
 
 This is just an place holder for README. 
 --------------------------------------------------------------------------------
 
-This repository (repo) contains codes and script that can be used to build 
-MIRI imager flat. The repo contains thre script (see bin directory): get_data,
-select_data & genrate_flat. 
+This repository (repo) contains classes, functions and scripta that can be 
+used to work with MIRI data. 
+
+The pacakge contains CLI scripts: get_data, select_data, generate_imager_flat,
+and generate_lrs_flat.
 
 get_data is a command line script that can be used to get appropriate data 
 from the MAST archive.
@@ -14,8 +17,8 @@ from the MAST archive.
 select_data is a script to select the appropriate files to use in generating 
 MIRI imager flat.
 
-generate_flat is a script to build a MIRI imager flat using the input manifest
-(output of the select_data script).
+generate_imager/lrs_flat is a script to build a MIRI imager/lrs flat using an 
+input manifest (output of the select_data script).
 
 More detailed installation instruction will be added soon to this repo.
 
