@@ -75,6 +75,9 @@ class MainWindow(QMainWindow):
         
         if 'rate' in self.cur_file:
             self.kind = {'PROD_TYPE': 'rate'}
+        ### Need to fix this logic.
+        elif 'cal' in self.cur_file:
+        	self.kind = {'PROD_TYPE': 'rate'}
         elif 'flt' in self.cur_file:
             self.kind = {'PROD_TYPE': 'flt'}
         else:
@@ -205,6 +208,7 @@ class MainWindow(QMainWindow):
             self.ds9.set(f"file {self.df['Filename'][self.cur_index]}")
             
         self.ds9.set("zoom to fit")
+        self.ds9.set("scale mode zscale")
         
         widget.setLayout(layout1)
         
@@ -233,7 +237,6 @@ class MainWindow(QMainWindow):
         
     def set_output(self, dirname=None):
         if dirname is None:
-            print(os.path.abspath('./'))
             outpath = os.getcwd()
         else:
             outpath = os.path.join(os.getcwd(), dirname)
@@ -311,8 +314,15 @@ class MainWindow(QMainWindow):
                     if not col_name in df_unsorted.columns:
                         df_unsorted[col_name] = False
                 
+                emp_cols = ['NGroups', 'ExpNums', 'DithPatt', 'DithTotl', 'DithNum',
+                            'DithXoff', 'DithYoff']
+                for col_name in emp_cols:
+                    if not col_name in df_unsorted.columns:
+                        df_unsorted[col_name] = ""
+                
                 df = df_unsorted.sort_values(by=["Viewed"]).reset_index(drop=True).copy()
                 self.viewed = len(df["Viewed"][df["Viewed"]==True]) - 1
+                
             else:
                 print("\n Input directory or file not found.")
                 print(" Existing ......")

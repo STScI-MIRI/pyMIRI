@@ -21,4 +21,6 @@ package/pymiri/lrs/__init__.py
 package/pymiri/lrs/make_flat.py
 package/pymiri/utils/DownloadData.py
 package/pymiri/utils/__init__.py
+package/pymiri/utils/check_directory.py
 package/pymiri/utils/download_data.py
+package/pymiri/utils/get_output_directory.py
