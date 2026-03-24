@@ -358,7 +358,7 @@ class GetMIRIData(object):
                 psgd = psubgrp.lower()
                 
             if kind == 'jpg':
-                get_urls = data_urls['dataURI'].str.replace(psgd+'.fits', 'rate.jpg')
+                get_urls = data_urls['dataURI'].str.replace(psgd+'.fits', psgd+'.jpg')
                 opath = os.path.join(opath, 'jpg')
                 if not os.path.isdir(opath):
                     os.makedirs(opath)
