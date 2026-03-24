@@ -80,6 +80,8 @@ class MainWindow(QMainWindow):
         	self.kind = {'PROD_TYPE': 'rate'}
         elif 'flt' in self.cur_file:
             self.kind = {'PROD_TYPE': 'flt'}
+        elif 'x1d' in self.cur_file:
+            self.kind = {'PROD_TYPE': 'x1d'}
         else:
             self.kind = {'PROD_TYPE': 'NA'}
             
@@ -204,11 +206,14 @@ class MainWindow(QMainWindow):
         self.ds9 = ds9.DS9()
         if self.df['Filename'][self.cur_index].split('.')[1] == 'jpg':
             self.ds9.set(f"jpeg {self.df['Filename'][self.cur_index]}")
+        elif self.df['Filename'][self.cur_index].split('.')[1] == 'png':
+            self.ds9.set(f"png {self.df['Filename'][self.cur_index]}")
+            self.ds9.set("scale mode minmax")
         elif self.df['Filename'][self.cur_index].split('.')[1] == 'fits':
             self.ds9.set(f"file {self.df['Filename'][self.cur_index]}")
-            
+            self.ds9.set("scale mode zscale")
+        
         self.ds9.set("zoom to fit")
-        self.ds9.set("scale mode zscale")
         
         widget.setLayout(layout1)
         
@@ -267,7 +272,13 @@ class MainWindow(QMainWindow):
                         if len(flist) == 0:
                             print("Input directory does not contain")
                             print("fits FLT files. Existing.....")
-                            sys.exit()
+                            flist = glob(os.path.join(pth, '*x1d.png'))
+
+                            if len(flist) == 0:
+                                print("Input directory does not contain")
+                                print("x1d png files. Existing.....")
+                                sys.exit()
+                            kind = {'FORMAT': 'png', 'PROD_TYPE': 'x1d'}
                         kind = {'FORMAT': 'fits', 'PROD_TYPE': 'flt'}
                     kind = {'FORMAT': 'jpg', 'PROD_TYPE': 'rate'}
                 
@@ -423,6 +434,8 @@ class MainWindow(QMainWindow):
         
         if self.df['Filename'][self.cur_index].split('.')[1] == 'jpg':
             self.ds9.set(f"jpeg {self.df['Filename'][self.cur_index]}")
+        elif self.df['Filename'][self.cur_index].split('.')[1] == 'png':
+            self.ds9.set(f"png {self.df['Filename'][self.cur_index]}")
         elif self.df['Filename'][self.cur_index].split('.')[1] == 'fits':
             self.ds9.set(f"file {self.df['Filename'][self.cur_index]}")
         
@@ -496,10 +509,15 @@ class MainWindow(QMainWindow):
         
         if self.kind['FORMAT'] == 'jpg':
             fname_col = mani_df['Filename'].str.replace('jpg', 'fits')#.str.replace('rate', 'uncal')
+        if self.kind['FORMAT'] == 'png':
+            fname_col = mani_df['Filename'].str.replace('png', 'fits')
+
         if self.kind['PROD_TYPE'] == 'rate':
-            fname_col = mani_df['Filename'].str.replace('rate', 'uncal')
+            fname_col = fname_col.str.replace('rate', 'uncal')
         if self.kind['PROD_TYPE'] == 'flt':
-            fname_col = mani_df['Filename'].str.replace('flt', 'raw')
+            fname_col = fname_col.str.replace('flt', 'raw')
+        if self.kind['PROD_TYPE'] == 'x1d':
+            fname_col = fname_col.str.replace('x1d', 'rate')
         
         mani_lst =list(fname_col[mani_df['Selected']==True])
         
