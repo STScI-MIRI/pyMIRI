@@ -25,7 +25,7 @@ class GetMIRIData(object):
         self.params = None
         self.inpath = None
         self.filter = None
-        self.outpath = os.path.join(os.getcwd(), 'proc')
+        self.outpath = os.path.join(os.getcwd(), 'data')
         self.query_dir = os.path.join(self.outpath, 'query_tbls')
         self.token = None
         self.counter = False
@@ -355,10 +355,13 @@ class GetMIRIData(object):
             if psubgrp is None:
                 psgd = "uncal"
             else:
-                psgd = psubgrp.lower()
+            	psgd = psubgrp.lower()
                 
             if kind == 'jpg':
-                get_urls = data_urls['dataURI'].str.replace(psgd+'.fits', psgd+'.jpg')
+                if psgd == "x1d":
+                    get_urls = data_urls['dataURI'].str.replace(psgd+'.fits', psgd+'.png')
+                else:
+                    get_urls = data_urls['dataURI'].str.replace(psgd+'.fits', psgd+'.jpg')
                 opath = os.path.join(opath, 'jpg')
                 if not os.path.isdir(opath):
                     os.makedirs(opath)
