@@ -1,5 +1,5 @@
-<h1 style="text-align: center;">pyMIRI</h1>
-<h2 style="text-align: center;">Sachin's MIRI data reduction, calibration, and analysis package.</h2>
+<h1 align="center">pyMIRI</h1>
+<h2 align="center">Sachin's MIRI data reduction, calibration, and analysis package.</h2>
 
 ================================================================================
 
