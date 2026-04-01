@@ -1,7 +1,6 @@
 <h1 align="center">pyMIRI</h1>
 
-## Sachin's MIRI data reduction, calibration, and analysis package.
-================================================================================
+### Sachin's MIRI data reduction, calibration, and analysis package.
 
 ## Installation.
 1. Create an conda environment to install this package.
