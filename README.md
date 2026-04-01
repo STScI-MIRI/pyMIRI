@@ -1,6 +1,6 @@
 <h1 align="center">pyMIRI</h1>
-<h2 align="center">Sachin's MIRI data reduction, calibration, and analysis package.</h2>
 
+## Sachin's MIRI data reduction, calibration, and analysis package.
 ================================================================================
 
 ## Installation.
