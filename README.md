@@ -4,6 +4,24 @@ pyMIRI - Sachin's MIRI data reduction, calibration, and analysis package.
 This is just an place holder for now. 
 --------------------------------------------------------------------------------
 
+## Installation.
+1. Create an conda environment to install this package.
+```shell
+conda create --name pymiri_utils python=3.11
+```
+
+2. Activate the conda environment
+```shell
+conda activate pymiri_utils
+```
+
+3. Install package using pip. I have used the HTTP protocol to get the package but 
+you can also use SSH if you prefer.
+```shell
+pip install git+https://github.com/STScI-MIRI/pyMIRI.git
+```
+--------------------------------------------------------------------------------
+
 This project contains pymiri package that can be used to work with MIRI data. 
 The pacakge contains CLI scripts: get_data, select_data, generate_imager_flat,
 and generate_lrs_flat.
