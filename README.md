@@ -33,7 +33,6 @@ MIRI imager flat.
 - generate_imager/lrs_flat is a script to build a MIRI imager/lrs flat using an 
 input manifest (output of the select_data script).
 
-More detailed installation instruction will be added soon to this repo.
 
 Contributors
 ------------
