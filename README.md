@@ -3,9 +3,6 @@
 
 ================================================================================
 
-This is just an place holder for now. 
---------------------------------------------------------------------------------
-
 ## Installation.
 1. Create an conda environment to install this package.
 ```shell
