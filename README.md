@@ -1,4 +1,6 @@
-pyMIRI - Sachin's MIRI data reduction, calibration, and analysis package.
+<h1 style="text-align: center;">pyMIRI</h1>
+<h2 style="text-align: center;">Sachin's MIRI data reduction, calibration, and analysis package.</h2>
+
 ================================================================================
 
 This is just an place holder for now. 
