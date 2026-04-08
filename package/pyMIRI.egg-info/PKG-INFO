@@ -17,10 +17,26 @@ Requires-Dist: pyds9>=1.8
 Requires-Dist: PyQt5
 Dynamic: license-file
 
-pyMIRI - Sachin's MIRI data reduction, calibration, and analysis package.
-================================================================================
+<h1 align="center">pyMIRI</h1>
 
-This is just an place holder for now. 
+### Sachin's MIRI data reduction, calibration, and analysis package.
+
+## Installation.
+1. Create an conda environment to install this package.
+```shell
+conda create --name pymiri_utils python=3.11
+```
+
+2. Activate the conda environment
+```shell
+conda activate pymiri_utils
+```
+
+3. Install package using pip. I have used the HTTP protocol to get the package but 
+you can also use SSH if you prefer.
+```shell
+pip install git+https://github.com/STScI-MIRI/pyMIRI.git
+```
 --------------------------------------------------------------------------------
 
 This project contains pymiri package that can be used to work with MIRI data. 
@@ -36,7 +52,6 @@ MIRI imager flat.
 - generate_imager/lrs_flat is a script to build a MIRI imager/lrs flat using an 
 input manifest (output of the select_data script).
 
-More detailed installation instruction will be added soon to this repo.
 
 Contributors
 ------------

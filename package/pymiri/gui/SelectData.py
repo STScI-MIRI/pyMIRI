@@ -77,7 +77,7 @@ class MainWindow(QMainWindow):
             self.kind = {'PROD_TYPE': 'rate'}
         ### Need to fix this logic.
         elif 'cal' in self.cur_file:
-        	self.kind = {'PROD_TYPE': 'rate'}
+            	self.kind = {'PROD_TYPE': 'rate'}
         elif 'flt' in self.cur_file:
             self.kind = {'PROD_TYPE': 'flt'}
         elif 'x1d' in self.cur_file:
@@ -158,7 +158,6 @@ class MainWindow(QMainWindow):
         
         frame = QFrame()
         frame.setFrameShape(QFrame.StyledPanel | QFrame.Raised)
-        
         
         frame.setLayout(info_layout)
         
@@ -506,12 +505,15 @@ class MainWindow(QMainWindow):
         
     def maft_clicked(self):
         mani_df = self.df.copy()
+        print(self.kind['FORMAT'])
         
         if self.kind['FORMAT'] == 'jpg':
             fname_col = mani_df['Filename'].str.replace('jpg', 'fits')#.str.replace('rate', 'uncal')
-        if self.kind['FORMAT'] == 'png':
+        elif self.kind['FORMAT'] == 'png':
             fname_col = mani_df['Filename'].str.replace('png', 'fits')
-
+        else:
+        	fname_col = mani_df['Filename']
+        
         if self.kind['PROD_TYPE'] == 'rate':
             fname_col = fname_col.str.replace('rate', 'uncal')
         if self.kind['PROD_TYPE'] == 'flt':
