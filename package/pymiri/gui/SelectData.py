@@ -67,6 +67,7 @@ class MainWindow(QMainWindow):
         
         self.num_files = len(self.df)
         
+        self.pre_index = 0
         self.cur_index = 0
         self.index_str = "File {} of {}"
         
@@ -91,8 +92,10 @@ class MainWindow(QMainWindow):
             self.fits_head = self.get_fits_headers(self.df['Filename'][self.cur_index])
             
             self.cur_ngrp = self.df['NGroups'][self.cur_index]
-            self.cur_xoff = self.df['DithXoff'][self.cur_index]
-            self.cur_yoff = self.df['DithYoff'][self.cur_index]
+            self.cur_xoff = self.df['DithXoff'][self.cur_index] - \
+            				self.df['DithXoff'][self.pre_index]
+            self.cur_yoff = self.df['DithYoff'][self.cur_index] - \
+            				self.df['DithYoff'][self.pre_index]
         else:
             self.cur_ngrp = np.nan
             self.cur_xoff = np.nan
@@ -210,6 +213,7 @@ class MainWindow(QMainWindow):
             self.ds9.set("scale mode minmax")
         elif self.df['Filename'][self.cur_index].split('.')[1] == 'fits':
             self.ds9.set(f"file {self.df['Filename'][self.cur_index]}")
+            self.ds9.set("scale POW")
             self.ds9.set("scale mode zscale")
         
         self.ds9.set("zoom to fit")
@@ -331,7 +335,9 @@ class MainWindow(QMainWindow):
                         df_unsorted[col_name] = ""
                 
                 df = df_unsorted.sort_values(by=["Viewed", "Filename"]).reset_index(drop=True).copy()
-                self.viewed = len(df["Viewed"][df["Viewed"]==True]) - 1
+                self.viewed = len(df["Viewed"][df["Viewed"]==True])
+                if self.viewed > 0:
+                	self.viewed = self.viewed - 1
                 
             else:
                 print("\n Input directory or file not found.")
@@ -418,8 +424,10 @@ class MainWindow(QMainWindow):
             
             self.cur_nstr = self.ngrp_str.format(self.df['NGroups'][self.cur_index],
                                                  44 * " ",
-                                                 self.df['DithXoff'][self.cur_index],
-                                                 self.df['DithYoff'][self.cur_index])
+                                                 self.df['DithXoff'][self.cur_index] - \
+                                                 self.df['DithXoff'][self.pre_index],
+                                                 self.df['DithYoff'][self.cur_index] - \
+                                                 self.df['DithYoff'][self.pre_index])
         else:
             self.cur_nstr = self.ngrp_str.format(np.nan,
                                                  44 * " ",
@@ -456,8 +464,9 @@ class MainWindow(QMainWindow):
     def next_clicked(self):
         self.df.loc[self.cur_index, 'Viewed'] = True
         if self.cur_index < self.num_files - 1:
-            self.cur_index = self.cur_index + 1
-            self.update_image()
+        	self.pre_index = self.cur_index
+        	self.cur_index = self.cur_index + 1
+        	self.update_image()
         else:
             print("\n This is the last file. Please use the previous ")
             print(" button (or Key p/left-arrow) to view files")
@@ -465,9 +474,14 @@ class MainWindow(QMainWindow):
         
     def prev_clicked(self):
         self.df.loc[self.cur_index, 'Viewed'] = True
-        if self.cur_index > 0:
-            self.cur_index = self.cur_index - 1
-            self.update_image()
+        if self.cur_index > 1:
+        	self.pre_index = self.cur_index - 2
+        	self.cur_index = self.cur_index - 1
+        	self.update_image()
+        elif self.cur_index == 1:
+        	self.pre_index = self.cur_index - 1
+        	self.cur_index = self.cur_index - 1
+        	self.update_image()
         else:
             print("\n You are already at the first file. Please use")
             print(" the next button (or Key n/right-arrow) to view files.")
