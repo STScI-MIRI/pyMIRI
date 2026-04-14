@@ -650,10 +650,15 @@ class MakeFlat(object):
         xpix, ypix = np.where(flat < 0.0)
         
         if len(xpix) >= 1:
+            print(f"\n {len(xpix)} pixels had negative values. These pixels")
+            print(" are NaN-ed in the SCI & ERR arrays and AD_Floor flag")
+            print(" is set the DQ array.") 
             for x, y in zip(xpix, ypix):
-                outflat.dq[x, y] = mask[x, y] + \
-                                   datamodels.dqflags.pixel['AD_FLOOR'] + \
-                                   datamodels.dqflags.pixel['DO_NOT_USE']
+                    outflat.data[x, y] = np.nan
+                    outflat.err[x, y] = np.nan
+                    outflat.dq[x, y] = mask[x, y] + \
+                                    datamodels.dqflags.pixel['AD_FLOOR'] + \
+                                    datamodels.dqflags.pixel['DO_NOT_USE']
         else:
             print(" All pixels passed the AD_FLOOR test.")
         

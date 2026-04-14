@@ -15,7 +15,7 @@ import os
 import sys
 import argparse
 
-import pyds9 as ds9
+# import pyds9 as ds9
 
 from pymiri.imager import MakeFlat
 
@@ -123,9 +123,9 @@ def main():
                              dthres=args.thres,
                              save=args.save)
 
-    if not args.save:
-        d = ds9.DS9()
-        d.set_np2arr(fdata.data)
+#     if not args.save:
+#         d = ds9.DS9()
+#         d.set_np2arr(fdata.data)
     
     
     sys.exit()
