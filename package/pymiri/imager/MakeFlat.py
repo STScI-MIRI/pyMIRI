@@ -567,12 +567,17 @@ class MakeFlat(object):
         outflat.meta.subarray.ystart = 1
         outflat.meta.subarray.ysize = 1024
         
-        outflat.history.append("File created by taking the sigma clipped " +
+        # outflat.history.append("File created by taking the sigma clipped " +
+        #                        "".join(method))
+        # outflat.history.append("    of the normalized rate images: ")
+        
+        outflat.add_history_entry("File created by taking the sigma clipped " +
                                "".join(method))
-        outflat.history.append("    of the normalized rate images: ")
+        outflat.add_history_entry("    of the normalized rate images: ")
         
         for i, fl in enumerate(input_df['RATEFILE']):
-            outflat.history.append(fl)
+            # outflat.history.append(fl)
+            outflat.add_history_entry(fl)
             
             if self.rate_outpath[-1] != '/':
                 self.rate_outpath = self.rate_outpath + '/'

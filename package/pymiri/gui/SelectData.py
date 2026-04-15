@@ -31,7 +31,7 @@ from PyQt5.QtWidgets import (
     QWidget,
     # QDialog,
     # QDialogButtonBox,
-    QFileDialog
+    QFileDialog,
     )
 
 import pandas as pd
@@ -120,6 +120,7 @@ class MainWindow(QMainWindow):
         widget = QWidget()
         self.setCentralWidget(widget)
         
+        
         layout1 = QHBoxLayout()
         layout2 = QVBoxLayout()
         # layout3 = QVBoxLayout()
@@ -160,6 +161,7 @@ class MainWindow(QMainWindow):
         info_layout.addWidget(self.ngrp_label)
         
         frame = QFrame()
+        frame.setStyleSheet("background-color: white; border-radius:15px;")
         frame.setFrameShape(QFrame.StyledPanel | QFrame.Raised)
         
         frame.setLayout(info_layout)
@@ -200,6 +202,16 @@ class MainWindow(QMainWindow):
         button_layout.addWidget(save_button, 2, 0)
         button_layout.addWidget(quit_button, 2, 1)
         button_layout.addWidget(maft_button, 2, 2)
+        
+        ###
+        # bframe = QFrame()
+        # bframe.setStyleSheet("border-radius: 15px;")
+        # bframe.setFrameShape(QFrame.StyledPanel | QFrame.Raised)
+         
+        # bframe.setLayout(button_layout)
+        
+        # layout2.addWidget(bframe)
+        ###
         
         layout2.addLayout(button_layout)
         layout1.addLayout(layout2)
