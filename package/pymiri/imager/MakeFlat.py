@@ -85,14 +85,18 @@ class MakeFlat(object):
                      }
         
         for file in filelist:
-            hdr = fits.getheader(file)
-            meta_data['FILEPATH'].append(os.path.abspath(file))
-            meta_data['FILENAME'].append(hdr['FILENAME'])
-            meta_data['INSTRUMENT'].append(hdr['INSTRUME'])
-            meta_data['EXP_TYPE'].append(hdr['EXP_TYPE'])
-            meta_data['FILTER'].append(hdr['FILTER'])
-            meta_data['LAMP'].append(hdr['LAMP'])
-            meta_data['SUBARRAY'].append(hdr['SUBARRAY'])
+            try:
+                hdr = fits.getheader(file)
+                meta_data['FILEPATH'].append(os.path.abspath(file))
+                meta_data['FILENAME'].append(hdr['FILENAME'])
+                meta_data['INSTRUMENT'].append(hdr['INSTRUME'])
+                meta_data['EXP_TYPE'].append(hdr['EXP_TYPE'])
+                meta_data['FILTER'].append(hdr['FILTER'])
+                meta_data['LAMP'].append(hdr['LAMP'])
+                meta_data['SUBARRAY'].append(hdr['SUBARRAY'])
+            except OSError:
+                print(f"ERROR: Check file {file}.")
+                print("ERROR: File maybe corrupted.")
         
         input_df = pd.DataFrame(meta_data)
         
