@@ -587,9 +587,9 @@ class MakeFlat(object):
             # outflat.history.append(fl)
             
             # Ignore files that had issues when generating dataframe.
-            if np.isnan(fl):
-                print(f" No rate file for {input_df['FILENAME'][i]}")
-                continue
+            # if np.isnan(fl):
+#                 print(f" No rate file for {input_df['FILENAME'][i]}")
+#                 continue
             
             outflat.add_history_entry(fl)
             
