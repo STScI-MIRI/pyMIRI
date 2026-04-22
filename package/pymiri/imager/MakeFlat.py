@@ -12,7 +12,7 @@ This is the main MakeFlat class to generate MIRI imager flats.
 
 import os
 import sys
-
+import multiprocessing
 import configparser
 import pandas as pd
 import numpy as np
@@ -204,20 +204,10 @@ class MakeFlat(object):
         
         return self.df
     
-    def write_log_cfg(self, logfile, outdir=None):
-        
-        if outdir is None:
-            if isinstance(self.outpath, str):
-                outpath = self.outpath
-            elif self.inpath is None:
-                outpath = os.getcwd + 'proc/'
-            else:
-                outpath = self.inpath + 'proc/'
-        else:
-            outpath = outdir
-        
+    @staticmethod
+    def _write_log_cfg(logfile, outpath):
+        """Write the logging configuration file for the JWST pipeline."""
         log_file = os.path.join(outpath, logfile)
-        
         cfgfile = log_file.replace('.log', '.cfg')
         
         config = configparser.ConfigParser()
@@ -225,7 +215,8 @@ class MakeFlat(object):
         config.set("*", "handler", "file:" + log_file)
         config.set("*", "level", "INFO")
         
-        config.write(open(cfgfile, "w"))
+        with open(cfgfile, "w") as f:
+            config.write(f)
         
         return cfgfile
     
@@ -239,8 +230,48 @@ class MakeFlat(object):
         return params
     
     
+    @classmethod
+    def _run_single_det1(cls, args):
+        """Worker function to run Detector1Pipeline on a single file."""
+        file, op_dir, asdffile = args
+        b_name = os.path.basename(file)
+        r_name = b_name.replace('uncal.fits', 'rate.fits')
+        
+        # Check if rate file already exists
+        if os.path.isfile(os.path.join(op_dir, r_name)):
+            print(f' Rate file, {r_name}, exists.')
+            return r_name
+        
+        log_file = b_name.replace('_uncal.fits', '_rate.log')
+        cfgfile = cls._write_log_cfg(log_file, op_dir)
+        
+        try:
+            if asdffile is not None:
+                Detector1Pipeline.call(file, 
+                                        output_dir=op_dir, 
+                                        save_results=True,
+                                        logcfg=cfgfile,
+                                        config_file=asdffile
+                                        )
+            else:
+                Detector1Pipeline.call(file, 
+                                        output_dir=op_dir, 
+                                        save_results=True,
+                                        logcfg=cfgfile
+                                        )
+            
+            if os.path.isfile(os.path.join(op_dir, r_name)):
+                print(f' Generated rate file, {r_name}.')
+                return r_name
+            else:
+                print(f' strun error for file: {r_name}')
+                return np.nan
+        except Exception as e:
+            print(f" ERROR: Failed to process {b_name}: {e}")
+            return np.nan
+
     def run_detector1_pipe(self, input_df, flat_file=None, 
-                           asdffile=None, outdir=None):
+                           asdffile=None, outdir=None, nproc=10):
         
         if flat_file is None:
             msg = " Using default flat file for jwst detector1 pipeline."
@@ -248,7 +279,7 @@ class MakeFlat(object):
         
         if outdir is None:
             if self.inpath is None:
-                outpath = os.getcwd + 'proc/'
+                outpath = os.getcwd() + 'proc/'
             else:
                 outpath = self.inpath + 'proc/'
         else:
@@ -268,52 +299,25 @@ class MakeFlat(object):
         
         self.rate_outpath = op_dir
         
-        rate_files = []
+        # Prepare arguments for the parallel pool
+        worker_args = [(file, op_dir, asdffile) for file in input_df['FILEPATH']]
         
-        for file in input_df['FILEPATH']:
-            b_name = os.path.basename(file)
-            r_name = b_name.replace('uncal.fits', 'rate.fits')
-            
-            if not os.path.isfile(op_dir + r_name):
-                log_file = os.path.basename(file).replace('_uncal.fits', 
-                                                          '_rate.log')
-                
-                cfgfile = self.write_log_cfg(log_file, outdir=op_dir)
-                
-                if asdffile is not None:
-                    result = Detector1Pipeline.call(file, 
-                                                    output_dir=op_dir, 
-                                                    save_results=True,
-                                                    logcfg=cfgfile,
-                                                    config_file=asdffile
-                                                    )
-                    print(f" Using {asdffile} file in Detector1Pipeline.")
-                else:
-                    result = Detector1Pipeline.call(file, 
-                                                    output_dir=op_dir, 
-                                                    save_results=True,
-                                                    logcfg=cfgfile
-                                                    )
-                    print(" Using default, CDRS, file in Detector1Pipeline.")
-                
-                if os.path.isfile(op_dir + r_name):
-                    print(' Generted rate file, {}.'.format(r_name))
-                    rate_files.append(r_name)
-                else:
-                    print('strun error for file: {}'.format(r_name))
-                    rate_files.append(np.nan)   
-            else:
-                print(' Rate file, {}, exists.'.format(r_name))
-                rate_files.append(r_name)
-        
+        print(f" Starting parallel processing with {nproc} processes...")
+        with multiprocessing.Pool(processes=nproc) as pool:
+            rate_files = pool.map(self._run_single_det1, worker_args)
         
         input_df['RATEFILE'] = rate_files
         
-        unproc_df = input_df[input_df['RATEFILE']==np.nan].copy()
-        proc_df = input_df.drop(input_df[input_df['RATEFILE']==np.nan].index)
+        # Filter out files that failed (RATEFILE is NaN)
+        # Using pd.isna() for robust NaN checking in DataFrame
+        proc_mask = ~pd.isna(input_df['RATEFILE'])
+        proc_df = input_df[proc_mask].copy()
+        unproc_df = input_df[~proc_mask].copy()
         
-        unproc_df.to_csv(os.path.join(self.rate_outpath, "unproc_files.csv"),
-                         index=False)
+        if not unproc_df.empty:
+            unproc_df.to_csv(os.path.join(self.rate_outpath, "unproc_files.csv"),
+                             index=False)
+            print(f" Warning: {len(unproc_df)} files failed processing. See unproc_files.csv")
         
         self.df = proc_df
         

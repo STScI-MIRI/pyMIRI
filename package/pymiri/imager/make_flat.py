@@ -65,6 +65,10 @@ def main():
                         default=False, 
                         help='Flag to save intermediate files. Default ' +
                         'is False.')
+    parser.add_argument('-p', '--nproc', dest='nproc', type=int,
+                        action='store', default=10,
+                        help='Number of processes to use for parallel ' +
+                        'processing of files. Default is 10.')
     
     args = parser.parse_args()
 
@@ -109,7 +113,8 @@ def main():
         
     rate_dframe = mf.run_detector1_pipe(filt_dframe, 
                                         outdir=outpath,
-                                        asdffile=asdf_file)
+                                        asdffile=asdf_file,
+                                        nproc=args.nproc)
     
     #rate_dframe.to_csv('./test_df.csv')
     
