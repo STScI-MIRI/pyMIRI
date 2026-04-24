@@ -81,7 +81,8 @@ class MakeFlat(object):
                      'EXP_TYPE': [],
                      'FILTER': [],
                      'LAMP': [],
-                     'SUBARRAY': []
+                     'SUBARRAY': [],
+                     'DATE_OBS': []
                      }
         
         for file in filelist:
@@ -94,6 +95,7 @@ class MakeFlat(object):
                 meta_data['FILTER'].append(hdr['FILTER'])
                 meta_data['LAMP'].append(hdr['LAMP'])
                 meta_data['SUBARRAY'].append(hdr['SUBARRAY'])
+                meta_data['DATE_OBS'].append(hdr['DATE-OBS'])
             except OSError:
                 print(f"ERROR: Check file {file}.")
                 print("ERROR: File maybe corrupted.")
@@ -349,7 +351,6 @@ class MakeFlat(object):
         hdul = fits.open(m_file)
         
         sci_arr = hdul['sci'].data.copy()
-        #err_arr = hdul['err'].data.copy()
         dq_arr =hdul['dq'].data.copy()
         
         ### Mask n edge pixels.
@@ -548,14 +549,16 @@ class MakeFlat(object):
         
         # basic info
         outflat.meta.author = "Sachindev Shenoy"
-        outflat.meta.pedigree = "INFLIGHT 2022-04-01 2022-08-20"
+        # get end date
+        max_date = input_df['DATE_OBS'].max()
+        outflat.meta.pedigree = "INFLIGHT 2022-04-01 " + max_date
+        #"2022-08-20"
         outflat.meta.useafter = "2022-04-01T00:00:00"
         outflat.meta.description = "Flat array from flight data"
         outflat.meta.origin = "STScI"
         outflat.meta.telescope = "JWST"
-        outflat.meta.instrument.name = "MIRI"
         outflat.meta.reftype = "Flat"
-        # detector info
+        # instrument info
         outflat.meta.instrument.detector = "MIRIMAGE"
         
         if not self.band is None:
@@ -563,11 +566,14 @@ class MakeFlat(object):
             if not self.is_miri_band(u_band):
                 u_band = None
         outflat.meta.instrument.filter = u_band
-        
+        outflat.meta.instrument.name = "MIRI"
         outflat.meta.instrument.band = "N/A"
-        outflat.meta.subarray.name = "GENERIC"
+        # exposure info
+        outflat.meta.exposure.type = "N/A"
         outflat.meta.exposure.readpatt = "FASTR1"
-        outflat.meta.exposure.p_readpatt = "FAST|FASTR1|FASTGRPAVG|FASTGRPAVG16|FASTGRPAVG32|FASTGRPAVG64|FASTGRPAVG8|FASTR100|"
+        outflat.meta.exposure.p_readpatt = "FAST|FASTR1|FASTR100|FASTGRPAVG|FASTGRPAVG8|FASTGRPAVG16|FASTGRPAVG32|FASTGRPAVG64|"
+        # subarray info
+        outflat.meta.subarray.name = "GENERIC"
         outflat.meta.subarray.fastaxis = 1
         outflat.meta.subarray.slowaxis = 2
         outflat.meta.subarray.xstart = 1
@@ -575,22 +581,11 @@ class MakeFlat(object):
         outflat.meta.subarray.ystart = 1
         outflat.meta.subarray.ysize = 1024
         
-        # outflat.history.append("File created by taking the sigma clipped " +
-        #                        "".join(method))
-        # outflat.history.append("    of the normalized rate images: ")
-        
         outflat.add_history_entry("File created by taking the sigma clipped " +
                                "".join(method))
         outflat.add_history_entry("    of the normalized rate images: ")
         
         for i, fl in enumerate(input_df['RATEFILE']):
-            # outflat.history.append(fl)
-            
-            # Ignore files that had issues when generating dataframe.
-            # if np.isnan(fl):
-#                 print(f" No rate file for {input_df['FILENAME'][i]}")
-#                 continue
-            
             outflat.add_history_entry(fl)
             
             if self.rate_outpath[-1] != '/':
@@ -660,7 +655,7 @@ class MakeFlat(object):
         flat_unc = sf_std / np.sqrt(len(input_df['RATEFILE'])) #/ np.nanmedian(flat)
         
         
-        # add data
+        # add data to jwst data model
         outflat.data = flat.copy()
         outflat.err = flat_unc.copy()
         outflat.dq = mask.copy() #.astype(int)
