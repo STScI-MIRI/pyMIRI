@@ -551,7 +551,7 @@ class MakeFlat(object):
         outflat.meta.author = "Sachindev Shenoy"
         # get end date
         max_date = input_df['DATE_OBS'].max()
-        outflat.meta.pedigree = "INFLIGHT 2022-04-01 " + max_date
+        outflat.meta.pedigree = "INFLIGHT 2022-04-01 " + str(max_date)
         #"2022-08-20"
         outflat.meta.useafter = "2022-04-01T00:00:00"
         outflat.meta.description = "Flat array from flight data"
