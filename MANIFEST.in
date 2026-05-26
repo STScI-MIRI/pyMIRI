@@ -1,2 +1,2 @@
-graft src
+graft package
 recursive-exclude __pycache__*.py[cod]
