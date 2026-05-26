@@ -146,7 +146,7 @@ class MakeFlat(object):
         valid_modes = ['imager', 'corona', 'tso']
         
         if u_mode not in valid_modes:
-            print(" The requested mode is not a valib MIRI observing " +
+            print(" The requested mode is not a valid MIRI observing " +
                   " mode. Returing False.")
             return False
         
@@ -306,7 +306,7 @@ class MakeFlat(object):
         
         print(f" Starting parallel processing with {nproc} processes...")
         with multiprocessing.Pool(processes=nproc) as pool:
-            rate_files = pool.map(self._run_single_det1, worker_args)
+        	rate_files = pool.map(self._run_single_det1, worker_args)
         
         input_df['RATEFILE'] = rate_files
         
@@ -508,7 +508,7 @@ class MakeFlat(object):
         if band is None:
             print(" Checking for valid MIRI filter.....")
             if self.band is None:
-                print(" MIRI filter undefeined.")
+                print(" MIRI filter undefined.")
                 sys.exit(1)
             else:
                 u_band = self.band
