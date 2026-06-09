@@ -15,7 +15,7 @@ import pyds9 as ds9
 import numpy as np
 from astropy.io import fits
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QCoreApplication
 from PyQt5.QtGui import QFont#, QPixmap
 from PyQt5.QtWidgets import (
     QMainWindow,
@@ -48,22 +48,38 @@ class MainWindow(QMainWindow):
     but the user can override it.  
     """
 
-    def __init__(self):
+    def __init__(self, input_file=None, file_format=None, data_kind=None):
         super().__init__()
         
-        self.setWindowTitle("Select MIRI Imager Data")
+        # Store your flags
+        self.format = file_format
+        self.kind = data_kind
+        
+        # Handle the logic for the input path
+        if input_file:
+            # Case 2: One text argument [provided
+            self.infile = input_file
+            print(f"Input File: {self.infile}")
+        else:
+            # Case 1: No text argument provided
+            self.infile = None 
+            self.set_input_directory()
+        
+        self.setWindowTitle("Select MIRI Data")
         
         self.set_kwargs()
         
         self.initUI()
     
     def set_kwargs(self):
-        if len(sys.argv) == 1:
-            self.set_input_directory()
-        else:
-            self.inpaths = sys.argv[1:]
         
-        self.df = self.get_data_frame(self.inpaths)
+        # if len(sys.argv) == 1:
+        #     self.set_input_directory()
+        # else:
+        #     self.inpaths = sys.argv[1:]
+        
+        self.df = self.get_data_frame(self.infile, data_format=self.format,
+                                      data_kind=self.kind)
         
         self.num_files = len(self.df)
         
@@ -250,7 +266,7 @@ class MainWindow(QMainWindow):
         open_dlg = QFileDialog()
         inpath = open_dlg.getExistingDirectory(self, "Load data Directory")
         
-        self.inpaths = [inpath]
+        self.infile = inpath
         
         # return self.inpaths
         
@@ -267,94 +283,99 @@ class MainWindow(QMainWindow):
         return outpath
 
     
-    def get_data_frame(self, inpaths):
+    def get_data_frame(self, infile, data_format=None, data_kind=None):
         
         filelist = []
-        for path in inpaths:
-
-            pth = os.path.abspath(path)
+        # for path in inpaths:
             
-            if os.path.isdir(pth):
-                flist = glob(os.path.join(pth, '*rate.fits'))
-                
-                if len(flist) == 0:
-                    flist = glob(os.path.join(pth, '*rate.jpg'))
-                    if len(flist) == 0:
-                        print("Input directory does not contain")
-                        print("fits or jpg rate files.")
-                        flist = glob(os.path.join(pth, '*flt.fits'))
-                        
-                        if len(flist) == 0:
-                            print("Input directory does not contain")
-                            print("fits FLT files. Exiting.....")
-                            flist = glob(os.path.join(pth, '*x1d.png'))
-
-                            if len(flist) == 0:
-                                print("Input directory does not contain")
-                                print("x1d png files. Exiting.....")
-                                sys.exit()
-                            kind = {'FORMAT': 'png', 'PROD_TYPE': 'x1d'}
-                        kind = {'FORMAT': 'fits', 'PROD_TYPE': 'flt'}
-                    kind = {'FORMAT': 'jpg', 'PROD_TYPE': 'rate'}
-                
+        pth = os.path.abspath(infile)
+        
+        self.format = data_format if data_format is not None else 'fits' 
+        self.kind = data_kind if data_kind is not None else 'rate'
+        
+        if os.path.isdir(pth):
+            search_str = f"*{self.kind}.{self.format}"
+            
+            flist = glob(os.path.join(pth, search_str))
+            
+            # if len(flist) == 0:
+                # flist = glob(os.path.join(pth, ))
+            #     if len(flist) == 0:
+            #         print("Input directory does not contain")
+            #         print("fits or jpg rate files.")
+            #         flist = glob(os.path.join(pth, '*flt.fits'))
                     
-                kind = {'FORMAT': 'fits', 'PROD_TYPE': 'rate'}
+            #         if len(flist) == 0:
+            #             print("Input directory does not contain")
+            #             print("fits FLT files. Exiting.....")
+            #             flist = glob(os.path.join(pth, '*x1d.png'))
+
+            #             if len(flist) == 0:
+            #                 print("Input directory does not contain")
+            #                 print("x1d png files. Exiting.....")
+            #                 sys.exit()
+            #             kind = {'FORMAT': 'png', 'PROD_TYPE': 'x1d'}
+            #         kind = {'FORMAT': 'fits', 'PROD_TYPE': 'flt'}
+            #     kind = {'FORMAT': 'jpg', 'PROD_TYPE': 'rate'}
+            
                 
-                flist.sort()
-                filelist.extend(flist)
-                
-                if (kind['FORMAT']=='fits') & (kind['PROD_TYPE']=='rate'):
-                    in_dict = {"Filename": filelist,
-                               "Viewed": [False for fl in filelist],
-                               "Selected": [False for fl in filelist],
-                               "NGroups": [None for fl in filelist],
-                               "ExpNums": [None for fl in filelist],
-                               "DithPatt": ["" for fl in filelist],
-                               "DithTotl": [None for fl in filelist],
-                               "DithNum": [None for fl in filelist],
-                               "DithXoff": [None for fl in filelist],
-                               "DithYoff": [None for fl in filelist],
-                               }
-                else:
-                    in_dict = {"Filename": filelist,
-                               "Viewed": [False for fl in filelist],
-                               "Selected": [False for fl in filelist],
-                               }
-                
-                df = pd.DataFrame(in_dict)
-                self.viewed = 0
-            elif os.path.isfile(pth):
-                df_unsorted = pd.read_csv(pth)
-                if (not 'Filename' in df_unsorted.columns):
-                    df_unsorted = pd.read_csv(pth, header=None)
-                    if len(df_unsorted.columns) == 1:
-                        df_unsorted['Filename'] = df_unsorted[0].apply(os.path.abspath)
-                        df_unsorted.drop(0, axis=1, inplace=True)
-                    else:
-                        print("More than one column in the input file.")
-                        print("Please update csv file header and re-try the command.")
-                        sys.exit()
-                
-                req_cols = ['Viewed', 'Selected']
-                for col_name in req_cols:
-                    if not col_name in df_unsorted.columns:
-                        df_unsorted[col_name] = False
-                
-                emp_cols = ['NGroups', 'ExpNums', 'DithPatt', 'DithTotl', 'DithNum',
-                            'DithXoff', 'DithYoff']
-                for col_name in emp_cols:
-                    if not col_name in df_unsorted.columns:
-                        df_unsorted[col_name] = ""
-                
-                df = df_unsorted.sort_values(by=["Viewed", "Filename"]).reset_index(drop=True).copy()
-                self.viewed = len(df["Viewed"][df["Viewed"]==True])
-                if self.viewed > 0:
-                	self.viewed = self.viewed - 1
-                
+            # kind = {'FORMAT': 'fits', 'PROD_TYPE': 'rate'}
+            
+            flist.sort()
+            filelist.extend(flist)
+            
+            if (self.format=='fits'): # & (kind['PROD_TYPE']=='rate'):
+                in_dict = {"Filename": filelist,
+                           "Viewed": [False for fl in filelist],
+                           "Selected": [False for fl in filelist],
+                           "NGroups": [None for fl in filelist],
+                           "ExpNums": [None for fl in filelist],
+                           "DithPatt": ["" for fl in filelist],
+                           "DithTotl": [None for fl in filelist],
+                           "DithNum": [None for fl in filelist],
+                           "DithXoff": [None for fl in filelist],
+                           "DithYoff": [None for fl in filelist],
+                           }
             else:
-                print("\n Input directory or file not found.")
-                print(" Exiting ......")
-                sys.exit()
+                in_dict = {"Filename": filelist,
+                           "Viewed": [False for fl in filelist],
+                           "Selected": [False for fl in filelist],
+                           }
+            
+            df = pd.DataFrame(in_dict)
+            self.viewed = 0
+        elif os.path.isfile(pth):
+            df_unsorted = pd.read_csv(pth)
+            if (not 'Filename' in df_unsorted.columns):
+                df_unsorted = pd.read_csv(pth, header=None)
+                if len(df_unsorted.columns) == 1:
+                    df_unsorted['Filename'] = df_unsorted[0].apply(os.path.abspath)
+                    df_unsorted.drop(0, axis=1, inplace=True)
+                else:
+                    print("More than one column in the input file.")
+                    print("Please update csv file header and re-try the command.")
+                    sys.exit()
+            
+            req_cols = ['Viewed', 'Selected']
+            for col_name in req_cols:
+                if not col_name in df_unsorted.columns:
+                    df_unsorted[col_name] = False
+            
+            emp_cols = ['NGroups', 'ExpNums', 'DithPatt', 'DithTotl', 'DithNum',
+                        'DithXoff', 'DithYoff']
+            for col_name in emp_cols:
+                if not col_name in df_unsorted.columns:
+                    df_unsorted[col_name] = ""
+            
+            df = df_unsorted.sort_values(by=["Viewed", "Filename"]).reset_index(drop=True).copy()
+            self.viewed = len(df["Viewed"][df["Viewed"]==True])
+            if self.viewed > 0:
+            	self.viewed = self.viewed - 1
+            
+        else:
+            print("\n Input directory or file not found.")
+            print(" Exiting ......")
+            sys.exit()
         
         return df
     
@@ -392,16 +413,16 @@ class MainWindow(QMainWindow):
                 hdr_ngrp = "FITS FnF"
                 hdr_dpth = "FITS FnF"
             
-            hdr_ngrp = hdr['NGROUPS']
-            hdr_nexp = hdr['EXPOSURE']
+            hdr_ngrp = hdr['NGROUPS'] if 'NGROUPS' in hdr.keys() else np.nan
+            hdr_nexp = hdr['EXPOSURE'] if 'EXPOSURE' in hdr.keys() else np.nan
             try:
                 hdr_dpth = hdr['PATTTYPE']
             except KeyError:
                 hdr_dpth = 'KW Missing'
-            hdr_dtot = hdr['NUMDTHPT']
-            hdr_dnum = hdr['PATT_NUM']
-            hdr_xoff = hdr['XOFFSET']
-            hdr_yoff = hdr['YOFFSET']
+            hdr_dtot = hdr['NUMDTHPT'] if 'NUMDTHPT' in hdr.keys() else np.nan
+            hdr_dnum = hdr['PATT_NUM'] if 'PATT_NUM' in hdr.keys() else np.nan
+            hdr_xoff = hdr['XOFFSET'] if 'XOFFSET' in hdr.keys() else np.nan
+            hdr_yoff = hdr['YOFFSET'] if 'YOFFSET' in hdr.keys() else np.nan
             
         if fname.split('/')[-1] == self.cur_file:
             fits_hdr['Filename'] = self.cur_file
