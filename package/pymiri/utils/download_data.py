@@ -88,7 +88,8 @@ def main():
     else: 
         gmd.login2mast(token=args.token)
     
-    params = gmd.read_params(args.paramfile[0], inpath=args.inpath)
+    if args.paramfile is not None:
+        params = gmd.read_params(args.paramfile[0], inpath=args.inpath)
     
     if not args.qfile:    
         # SDS: Need to figure out a way to get user input for outfile

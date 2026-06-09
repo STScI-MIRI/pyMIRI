@@ -286,12 +286,12 @@ class MainWindow(QMainWindow):
                         
                         if len(flist) == 0:
                             print("Input directory does not contain")
-                            print("fits FLT files. Existing.....")
+                            print("fits FLT files. Exiting.....")
                             flist = glob(os.path.join(pth, '*x1d.png'))
 
                             if len(flist) == 0:
                                 print("Input directory does not contain")
-                                print("x1d png files. Existing.....")
+                                print("x1d png files. Exiting.....")
                                 sys.exit()
                             kind = {'FORMAT': 'png', 'PROD_TYPE': 'x1d'}
                         kind = {'FORMAT': 'fits', 'PROD_TYPE': 'flt'}
@@ -353,7 +353,7 @@ class MainWindow(QMainWindow):
                 
             else:
                 print("\n Input directory or file not found.")
-                print(" Existing ......")
+                print(" Exiting ......")
                 sys.exit()
         
         return df
@@ -549,7 +549,7 @@ class MainWindow(QMainWindow):
         
         mani_lst =list(fname_col[mani_df['Selected']==True])
         
-        fname = os.path.join(self.outpath, 'manifest.lst')
+        fname = os.path.join(self.outpath, 'manifest.txt')
         
         fl_dlg = QFileDialog()
         outfile, _ = fl_dlg.getSaveFileName(self, "Save Manifest", fname)
