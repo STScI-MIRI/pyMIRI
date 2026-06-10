@@ -15,7 +15,7 @@ import pyds9 as ds9
 import numpy as np
 from astropy.io import fits
 
-from PyQt5.QtCore import Qt, QCoreApplication
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont#, QPixmap
 from PyQt5.QtWidgets import (
     QMainWindow,
@@ -27,10 +27,8 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QLabel,
     QFrame,
-    # QLineEdit,
     QWidget,
-    # QDialog,
-    # QDialogButtonBox,
+    QInputDialog,
     QFileDialog,
     )
 
@@ -73,11 +71,6 @@ class MainWindow(QMainWindow):
     
     def set_kwargs(self):
         
-        # if len(sys.argv) == 1:
-        #     self.set_input_directory()
-        # else:
-        #     self.inpaths = sys.argv[1:]
-        
         self.df = self.get_data_frame(self.infile, data_format=self.format,
                                       data_kind=self.kind)
         
@@ -90,21 +83,7 @@ class MainWindow(QMainWindow):
         self.cur_file = self.df['Filename'][self.cur_index].split('/')[-1]
         self.file_str = "Filename: {}"
         
-        if 'rate' in self.cur_file:
-            self.kind = {'PROD_TYPE': 'rate'}
-        ### Need to fix this logic.
-        elif 'cal' in self.cur_file:
-            	self.kind = {'PROD_TYPE': 'rate'}
-        elif 'flt' in self.cur_file:
-            self.kind = {'PROD_TYPE': 'flt'}
-        elif 'x1d' in self.cur_file:
-            self.kind = {'PROD_TYPE': 'x1d'}
-        else:
-            self.kind = {'PROD_TYPE': 'NA'}
-            
-        self.kind['FORMAT'] = self.cur_file.split('.')[-1]
-        
-        if (self.kind['PROD_TYPE']=='rate') and (self.kind['FORMAT']=='fits'):
+        if self.format=='fits':
             self.fits_head = self.get_fits_headers(self.df['Filename'][self.cur_index])
             
             self.cur_ngrp = self.df['NGroups'][self.cur_index]
@@ -219,16 +198,6 @@ class MainWindow(QMainWindow):
         button_layout.addWidget(quit_button, 2, 1)
         button_layout.addWidget(maft_button, 2, 2)
         
-        ###
-        # bframe = QFrame()
-        # bframe.setStyleSheet("border-radius: 15px;")
-        # bframe.setFrameShape(QFrame.StyledPanel | QFrame.Raised)
-         
-        # bframe.setLayout(button_layout)
-        
-        # layout2.addWidget(bframe)
-        ###
-        
         layout2.addLayout(button_layout)
         layout1.addLayout(layout2)
         
@@ -268,8 +237,6 @@ class MainWindow(QMainWindow):
         
         self.infile = inpath
         
-        # return self.inpaths
-        
         
     def set_output(self, dirname=None):
         if dirname is None:
@@ -286,7 +253,6 @@ class MainWindow(QMainWindow):
     def get_data_frame(self, infile, data_format=None, data_kind=None):
         
         filelist = []
-        # for path in inpaths:
             
         pth = os.path.abspath(infile)
         
@@ -298,31 +264,14 @@ class MainWindow(QMainWindow):
             
             flist = glob(os.path.join(pth, search_str))
             
-            # if len(flist) == 0:
-                # flist = glob(os.path.join(pth, ))
-            #     if len(flist) == 0:
-            #         print("Input directory does not contain")
-            #         print("fits or jpg rate files.")
-            #         flist = glob(os.path.join(pth, '*flt.fits'))
-                    
-            #         if len(flist) == 0:
-            #             print("Input directory does not contain")
-            #             print("fits FLT files. Exiting.....")
-            #             flist = glob(os.path.join(pth, '*x1d.png'))
-
-            #             if len(flist) == 0:
-            #                 print("Input directory does not contain")
-            #                 print("x1d png files. Exiting.....")
-            #                 sys.exit()
-            #             kind = {'FORMAT': 'png', 'PROD_TYPE': 'x1d'}
-            #         kind = {'FORMAT': 'fits', 'PROD_TYPE': 'flt'}
-            #     kind = {'FORMAT': 'jpg', 'PROD_TYPE': 'rate'}
-            
-                
-            # kind = {'FORMAT': 'fits', 'PROD_TYPE': 'rate'}
-            
             flist.sort()
             filelist.extend(flist)
+            
+            if len(filelist) == 0:
+                exit_msg = f" No *{self.kind}.{self.format} in \n {pth}."
+                print(" Exiting ......")
+
+                sys.exit(exit_msg)
             
             if (self.format=='fits'): # & (kind['PROD_TYPE']=='rate'):
                 in_dict = {"Filename": filelist,
@@ -452,7 +401,7 @@ class MainWindow(QMainWindow):
                                              44 * " ",
                                              self.df['Selected'][self.cur_index])
         
-        if (self.kind['PROD_TYPE']=='rate') and (self.kind['FORMAT']=='fits'):
+        if self.format=='fits':
             self.fits_head = self.get_fits_headers(self.df['Filename'][self.cur_index])
             
             self.cur_nstr = self.ngrp_str.format(self.df['NGroups'][self.cur_index],
@@ -552,42 +501,46 @@ class MainWindow(QMainWindow):
         
     def maft_clicked(self):
         mani_df = self.df.copy()
-        print(self.kind['FORMAT'])
         
-        if self.kind['FORMAT'] == 'jpg':
+        if self.format == 'jpg':
             fname_col = mani_df['Filename'].str.replace('jpg', 'fits')#.str.replace('rate', 'uncal')
-        elif self.kind['FORMAT'] == 'png':
+        elif self.format == 'png':
             fname_col = mani_df['Filename'].str.replace('png', 'fits')
         else:
         	fname_col = mani_df['Filename']
         
-        if self.kind['PROD_TYPE'] == 'rate':
-            fname_col = fname_col.str.replace('rate', 'uncal')
-        if self.kind['PROD_TYPE'] == 'flt':
-            fname_col = fname_col.str.replace('flt', 'raw')
-        if self.kind['PROD_TYPE'] == 'x1d':
-            fname_col = fname_col.str.replace('x1d', 'rate')
+        new_kind, new_ok = QInputDialog.getText(self, 
+                                                'Save File Type', 
+                                                'Which type of file do you '
+                                                'want in the manifest: \n'
+                                                'uncal, rate, cal, etc.',
+                                                0, 'uncal')
         
-        mani_lst =list(fname_col[mani_df['Selected']==True])
+        if new_ok and new_kind:
+            fname_col = fname_col.str.replace(self.kind, new_kind)
         
-        fname = os.path.join(self.outpath, 'manifest.txt')
-        
-        fl_dlg = QFileDialog()
-        outfile, _ = fl_dlg.getSaveFileName(self, "Save Manifest", fname)
-        
-        if outfile == "":
-            print("\n Manifest Not Saved.")
+            mani_lst =list(fname_col[mani_df['Selected']==True])
+            
+            fname = os.path.join(self.outpath, 'manifest.txt')
+            
+            fl_dlg = QFileDialog()
+            outfile, _ = fl_dlg.getSaveFileName(self, "Save Manifest", fname)
+            
+            if outfile == "":
+                print("\n Manifest Not Saved.")
+            else:
+                with open(outfile, 'w+') as f:
+                    for line in mani_lst:
+                        f.write(line+'\n')
         else:
-            with open(outfile, 'w+') as f:
-                for line in mani_lst:
-                    f.write(line+'\n')
+            print(" \n Manifest not Saved.")
     
     
     def close_all(self):
         try:
             self.ds9.set("exit")
         except ValueError:
-            print("DS9 is not running. Exiting....")
+            print(" DS9 is not running. Exiting....")
         self.save_clicked()
         QApplication.quit()
         
@@ -596,7 +549,7 @@ class MainWindow(QMainWindow):
         try:
             self.ds9.set("exit")
         except ValueError:
-            print("DS9 is not running. Exiting....")
+            print(" DS9 is not running. Exiting....")
         self.save_clicked()
         event.accept()  
             
