@@ -288,6 +288,17 @@ class GetMIRIData(object):
         print(" # of Query Resquest rows {}: ".format(len(observation_list)))
         print(" Check {} in output directory.".format(outfile))
         
+        # Since FILTER values changes in observations table we need 
+        # to update the FILTER value.
+        if self.filter == "F1065C":
+        	self.filter = "F1065C;4QPM_1065"
+        elif self.filter == "F1140C":
+        	self.filter = "F1140C;4QPM_1140"
+        elif self.filter == "F1550C":
+        	self.filter = "F1550C;4QPM_1550"
+        elif self.filter == "F2300C":
+        	self.filter = "F2300C;LYOT_2300"
+        
         # Query for Data Products
         print(" Executing Get Product List Query Request ..........")
         data_products = Observations.get_product_list(observation_list)

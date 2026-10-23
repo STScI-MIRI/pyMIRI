@@ -6,6 +6,7 @@ Home-page: https://github.com/STScI-MIRI/pyMIRI
 Author: Sachindev Shenoy
 Author-email: "Sachindev Shenoy" <sachin.4m.stsci@gmail.com>
 License: BSD
+Classifier: License :: OSI Approved :: BSD License
 License-File: LICENSE
 Requires-Dist: astropy>=6.1
 Requires-Dist: astroquery
