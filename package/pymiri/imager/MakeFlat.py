@@ -143,7 +143,7 @@ class MakeFlat(object):
         self.band = u_band
         self.mode = u_mode
         
-        valid_modes = ['imager', 'corona', 'tso']
+        valid_modes = ['imager', 'coron', 'tso']
         
         if u_mode not in valid_modes:
             print(" The requested mode is not a valid MIRI observing " +
@@ -157,7 +157,7 @@ class MakeFlat(object):
                 yes_no = True
             else:
                 yes_no = False
-        elif u_mode == 'corona':
+        elif u_mode == 'coron':
             valid_bands = ['F1065C', 'F1140C', 'F1550C', 'F2300C']
             if u_band in valid_bands:
                 yes_no = True
@@ -166,7 +166,7 @@ class MakeFlat(object):
             
         return yes_no
     
-    def filter_dataframe(self, input_df, band=None):
+    def filter_dataframe(self, input_df, band=None, in_mode=None):
         
         if band is None:
             msg = " FILTER/band is undefined. Will look in the data "
@@ -186,7 +186,13 @@ class MakeFlat(object):
             
             band = barr[0]
         
-        if self.is_miri_band(band):
+        if in_mode is None:
+        	self.mode = 'imager'
+        	print(" Mode is undefined. Setting mode to default value (imager).")
+        else:
+        	self.mode = in_mode
+        
+        if self.is_miri_band(band, mode=self.mode):
             self.band = band
         else:
             err_msg = "Filter, {}, is not a part of MIRI ".format(band)
@@ -195,11 +201,16 @@ class MakeFlat(object):
             return input_df
         
         tmp_df = input_df.copy()
-        
+        print(self.mode)
         tmp_df = tmp_df.drop(tmp_df[tmp_df['INSTRUMENT']!='MIRI'].index)
-        tmp_df = tmp_df.drop(tmp_df[tmp_df['EXP_TYPE']!='MIR_IMAGE'].index)
+        if self.mode == 'imager':
+        	tmp_df = tmp_df.drop(tmp_df[tmp_df['EXP_TYPE']!='MIR_IMAGE'].index)
+        	tmp_df = tmp_df.drop(tmp_df[tmp_df['SUBARRAY']!='FULL'].index)
+        elif self.mode == 'coron':
+        	tmp_df = tmp_df.drop(tmp_df[tmp_df['EXP_TYPE']!='MIR_4QPM'].index)
+        	tmp_df = tmp_df.drop(tmp_df[tmp_df['SUBARRAY']!='MASK1065'].index)
         tmp_df = tmp_df.drop(tmp_df[tmp_df['LAMP']!='OFF'].index)
-        tmp_df = tmp_df.drop(tmp_df[tmp_df['SUBARRAY']!='FULL'].index)
+        
         tmp_df = tmp_df.drop(tmp_df[tmp_df['FILTER']!=band].index)
         
         self.df = tmp_df.copy()
@@ -305,6 +316,7 @@ class MakeFlat(object):
         worker_args = [(file, op_dir, asdffile) for file in input_df['FILEPATH']]
         
         print(f" Starting parallel processing with {nproc} processes...")
+        multiprocessing.set_start_method('forkserver', force=True)
         with multiprocessing.Pool(processes=nproc) as pool:
         	rate_files = pool.map(self._run_single_det1, worker_args)
         
@@ -487,7 +499,7 @@ class MakeFlat(object):
         
         return flat_mask
     
-    def get_delta_threshold(self, band):
+    def get_delta_threshold(self, band, in_mode='imager'):
         """
             Function to get the delta threshold to mask point source
             from the input data.
@@ -514,8 +526,14 @@ class MakeFlat(object):
                 u_band = self.band
         else:
             u_band = band
-            
-        if not self.is_miri_band(u_band):
+        
+        if in_mode is None:
+        	self.mode = 'imager'
+        	print(" Mode is undefined. Setting mode to default value (imager).")
+        else:
+        	self.mode = in_mode
+        
+        if not self.is_miri_band(u_band, mode=self.mode):
             print(" {} is not a valid MIRI filter/band.".format(u_band))
             print(" Exiting ......")
             sys.exit(1)
@@ -528,7 +546,11 @@ class MakeFlat(object):
                             'F1500W': 50,
                             'F1800W': 50,
                             'F2100W': 50,
-                            'F2550W': 200}
+                            'F2550W': 200,
+                            'F1065C': 2,
+                            'F1140C': 2,
+                            'F1550C': 5,
+                            'F2300C': 30}
         
         thres = delta_thresholds[band]
         
@@ -563,7 +585,7 @@ class MakeFlat(object):
         
         if not self.band is None:
             u_band = self.band
-            if not self.is_miri_band(u_band):
+            if not self.is_miri_band(u_band, mode=self.mode):
                 u_band = None
         outflat.meta.instrument.filter = u_band
         outflat.meta.instrument.name = "MIRI"
@@ -597,10 +619,11 @@ class MakeFlat(object):
             
             if u_band is None:
                 u_band = hdul[0].header['FILTER']
-                if not self.is_miri_band(u_band):
-                    print(" {} is not a valid MIRI filter/band.".format(u_band))
-                    print(" Skipping {} file.".format(fl))
-                    continue
+                
+                if not self.is_miri_band(u_band, mode=self.mode):
+                	print(" {} is not a valid MIRI filter/band.".format(u_band))
+                	print(" Skipping {} file.".format(fl))
+                	continue
             
             if mask is None:
                 mask = np.array(hdul['dq'].data, dtype='bool')
@@ -613,10 +636,10 @@ class MakeFlat(object):
             rate_med = np.nanmedian(hdul['sci'].data)
             
             if dthres is None:
-                thres = self.get_delta_threshold(u_band)
+                thres = self.get_delta_threshold(u_band, in_mode=self.mode)
             else:
                 thres = dthres
-
+            
             t_val = rate_med + thres
             rate_msk = hdul['sci'].data > t_val
             

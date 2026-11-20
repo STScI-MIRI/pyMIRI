@@ -40,6 +40,10 @@ def main():
                         action='store', default=None,
                         help='MIRI Imager filter/band to process. Default ' +
                         'is F560W.')
+    parser.add_argument('-mo', '--mode', dest='mode', type=str,
+                        action='store', default='imager',
+                        help='MIRI mode (imager, coron, tso). Default ' +
+                        'is imager.')
     parser.add_argument('-o', '--outpath', dest='outdir', type=str,
                         action='store', default=None,
                         help='Name of the output directory where the ' +
@@ -88,7 +92,8 @@ def main():
     in_dframe = mf.make_dataframe(file_list)
     
     filt_dframe = mf.filter_dataframe(in_dframe, 
-                                      band=args.filter)
+                                      band=args.filter,
+                                      in_mode=args.mode)
     
     if args.outdir is None:
         o_dir = args.inpath + 'proc/' 
@@ -122,12 +127,12 @@ def main():
                            msk_out=args.mval,
                            edge=args.edge,
                            save=args.save)
-    
+                             
     fdata = mf.generate_flat(rate_dframe, 
                              mask=flt_mask, 
                              dthres=args.thres,
                              save=args.save)
-
+    
 #     if not args.save:
 #         d = ds9.DS9()
 #         d.set_np2arr(fdata.data)
